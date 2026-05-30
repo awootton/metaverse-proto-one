@@ -1,0 +1,57 @@
+
+// Main thread (React component)
+import React, { useRef, useEffect } from 'react';
+
+function MyCanvasComponent() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const offscreenCanvas = canvasRef.current.transferControlToOffscreen();
+      const worker = new Worker(new URL('./my-worker.ts', import.meta.url)); // Adjust worker path
+      worker.postMessage({ canvas: offscreenCanvas }, [offscreenCanvas]);
+    }
+  }, []);
+
+  return <canvas ref={canvasRef} />;
+}
+
+export default MyCanvasComponent;
+
+
+
+// my-worker.ts (Web Worker)
+import { render } from '@react-three/offscreen';
+import { Canvas } from '@react-three/fiber'; // Or your scene component
+
+self.onmessage = (event: MessageEvent) => {
+  const offscreenCanvas = event.data.canvas as OffscreenCanvas;
+
+  render(
+    <Canvas gl={{ canvas: offscreenCanvas, antialias: true }}>
+      {/* Your react-three-fiber scene components */}
+      <mesh>
+        <boxGeometry />
+        <meshBasicMaterial color="hotpink" />
+      </mesh>
+    </Canvas>
+  );
+};
+
+
+
+(method) WebGLRenderer.render(scene: THREE.Object3D, camera: THREE.Camera): void
+Render a scene or an object using a camera. The render is done to a previously 
+specified WebGLRenderTarget#renderTarget .renderTarget set by calling WebGLRenderer#setRenderTarget .setRenderTarget 
+or to the canvas as usual.
+
+By default render buffers are cleared before rendering but you can prevent this by setting the property WebGLRenderer#autoClear autoClear to false. If you want to prevent only certain buffers being cleared you can set either the WebGLRenderer#autoClearColor autoClearColor, WebGLRenderer#autoClearStencil autoClearStencil or WebGLRenderer#autoClearDepth autoClearDepth properties to false. To forcibly clear one ore more buffers call WebGLRenderer#clear .clear.
+
+
+ImageBitmap
+In the worker, getting a WebGPU context from the OffscreenCanvas.
+Performing rendering operations within the worker using the WebGPU context.
+Transferring the rendered ImageBitmap back to the main thread for display. 
+
+https://github.com/whatwg/html/issues/6615
+
