@@ -49,6 +49,8 @@ export type LoadedMessageFromChild = {
     message: string
 }
 
+// a 2d component.
+// the 3d happens elsewhere
 export const MyIframe = (params: Params) => {
 
     // const ref = useRef(null!) // what is this good for? 

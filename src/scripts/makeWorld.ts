@@ -1,10 +1,12 @@
 
 /// <reference types="node" />
 
-import * as dns from "dns/promises"
+// import * as dns from "dns/promises"
 
 import { sendNameserviceCommand } from "./sendTheCommand"
 
+// excercise the knotfree.net API to reserve a name and create a world. 
+// it doesn't really create anything, See tryingToReserve.ts for that. This is just to test the API calls and get a feel for how it works.
 
 // command to execute: npx ts-node src/scripts/makeWorld.ts
 
@@ -27,7 +29,7 @@ let finished = false
 // [help] lists all commands. 🔓 means no encryption required
 // [proxy-status] returns ProxyStatusReturnType 🔓
 // [replace options] Replace all the options. Arg is json map in base64.
-// [reserve] assign a public key to a name, create
+// [reserve] assign a public key to a name, create  eg reserve sss.iot bigKnotfreeToken
 // [set option] add key subkey value. eg A @ 12.34.56.78 
 // [version] info about this thing
 
@@ -37,15 +39,15 @@ async function doTheScript() {
 
     // lookup a dns name from dns server
   
-    try {
-        const resolver = new dns.Resolver();
-        // resolver.setServers(['8.8.8.8', '8.8.4.4']);
-        resolver.setServers(['149.28.250.163']);
-        const addresses = await resolver.resolve4("alan-t-wootton.iot")
-        console.log("DNS lookup for alan-t-wootton.iot:", addresses)
-    } catch (err) {
-        console.error("DNS lookup failed:", err)
-    }
+    // try {
+    //     const resolver = new dns.Resolver();
+    //     // resolver.setServers(['8.8.8.8', '8.8.4.4']);
+    //     resolver.setServers(['149.28.250.163']);
+    //     const addresses = await resolver.resolve4("alan-t-wootton.iot")
+    //     console.log("DNS lookup for alan-t-wootton.iot:", addresses)
+    // } catch (err) {
+    //     console.error("DNS lookup failed:", err)
+    // }
 
     console.log()
 

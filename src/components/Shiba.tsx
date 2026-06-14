@@ -10,12 +10,18 @@ import { DeviceOrientationControls } from "@react-three/drei";
 import { PerspectiveCamera } from "@react-three/drei";
 import { Environment, useCubeTexture } from "@react-three/drei";
 import { FirstPersonControls } from "@react-three/drei";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+// import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Mesh } from "three";
-import AtwBox from "./MetaMainContain";
-import {CameraWalker} from "./CameraWalker";
+import AtwBox from "./OriginAxisDisplay";
+import { CameraWalker } from "./CameraWalker";
 import { TextureLoader, BackSide } from "three"
-import { useTexture } from "@react-three/drei";
+import { useTexture, useGLTF } from "@react-three/drei";
+import * as oct from "../knotfree-ts-lib/3d/UrlOctTree"
+
+import { Text } from '@react-three/drei';
+
+// import { useTexture, useGLTF } from '@react-three/drei';
+
 
 import Grid from "./Grid"
 
@@ -25,20 +31,46 @@ import Grid from "./Grid"
 
 import { Stats } from "@react-three/drei/core/Stats"
 
+// the origin is actually right in the middle of the dogs head.
+export function DrawDogComponent(props: { cube: oct.Cube }) {
 
-function DrawDogComponent() {
-  const fileUrl = "/shiba/scene.gltf";
-  const mesh = useRef<Mesh>(null!);
-  const gltf = useLoader(GLTFLoader, fileUrl);
+  const { scene } = useGLTF("/shiba/scene.gltf");
 
-  console.log('loaded gltf mesh', gltf);
-  return (
-    <mesh ref={mesh} rotation-x={Math.PI * 0.00} position={[0, 1.05, 0]}>
+  // const fileUrl = "/shiba/scene.gltf";
+  // const mesh = useRef<Mesh>(null!); // what is this for?
+
+  // const gltf = useLoader(GLTFLoader, fileUrl);
+
+  // const { scene } = useGLTF('fileUrl');
+
+  // console.log('loaded gltf mesh', gltf);
+  const size = 2 ** props.cube.p
+  console.log('cube size', size)
+  const xpos = props.cube.x + size / 2
+  const ypos = props.cube.y + size / 2
+
+  const zpos = props.cube.z + size / 2 + size * .25
+  return (<>
+    {/* <mesh ref={mesh} rotation-x={Math.PI * 0.00} position={[xpos, ypos, zpos]} scale={size * .5}>
       <primitive object={gltf.scene} />
+    </mesh> */}
+
+    <mesh rotation-x={Math.PI * 0.00} position={[xpos, ypos, zpos]} scale={size * .5}>
+      <primitive object={scene} />
     </mesh>
+
+
+    {/* <primitive object={scene} /> */}
+
+    <Text position={[xpos, props.cube.y + size * .8, zpos]} fontSize={1.5} color="purple">Big Dog Models</Text>
+  </>
   );
 }
 
+//      <Text position={[0, 0, 2.5]} fontSize={.5} color="red">E</Text>
+
+
+// unused 
 export function Shiba() {
 
   // const cubeTexture = useCubeTexture([
@@ -55,9 +87,9 @@ export function Shiba() {
 
   return (
     <div className='flex justify-center items-center h-screen'>
- 
-      <Canvas className='h-2xl w-2xl'  
-        camera={{ position: [ 0, 1.75, 4]  }}>
+
+      <Canvas className='h-2xl w-2xl'
+        camera={{ position: [0, 1.75, 4] }}>
 
         {/* <ambientLight /> */}
         <directionalLight
@@ -71,22 +103,23 @@ export function Shiba() {
 
         {/* <pointLight position={[10, 10, 10]} />   castShadow     */}
 
-        {/* <Environment map={texture} /> doesn't work */} 
+        {/* <Environment map={texture} /> doesn't work */}
 
         {/* <Perf /> */}
 
         <CameraWalker />
-         
-        <Grid size={10} />
+
+        {/* <Grid size={10} /> */}
 
         <AtwBox />
 
-        <DrawDogComponent />
+        {/* One Meter Cube */}
+        <DrawDogComponent cube={{ x: 0, y: 3, z: 0, p: 0, world: "testmain" }} />
 
         <Stats showPanel={0} />
 
       </Canvas>
-    
+
     </div>
   );
 }

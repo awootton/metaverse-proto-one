@@ -1,6 +1,7 @@
 
 // This is a simple pub/sub system for components to subscribe to changes, messages and replies.
 // use sessionID to subscribe.
+// unused and might not be fit for purpose.
 
 type localMapItem = {
     callback: (status: Object, err: string) => any

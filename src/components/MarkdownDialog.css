@@ -1,0 +1,44 @@
+ code {
+     background-color: lightgray
+ }
+ 
+ pre {
+     background-color: lightgray
+ }
+ 
+ p {
+     width: 100%;
+     overflow-wrap: normal;
+     margin-bottom: 12px;
+ }
+ 
+ li {
+     width: 100%;
+     overflow-wrap: normal
+ }
+ 
+ span {
+     align-items: left
+ }
+
+ .likeTypography {
+    /* font-family: "Roboto", "Helvetica", "Arial", sans-serif; */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.00938em;
+ }
+
+ .linkLikeButton  {
+    background-color: white;
+    border: none;
+    color: blue;
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0.00938em;
+ }
+
