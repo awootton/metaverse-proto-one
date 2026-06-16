@@ -12,13 +12,24 @@ import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 import { OrbitControls } from '@react-three/drei';
 import { OutlineBoxComponent } from './OutlineBoxComponent';
 
+import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'; // just a map.
+
+// const appVisibleTree = new bvts.BuildVisibleTreeStatus(myMapCacheIntf);
+
 export type Props = {
-  spaces: string // comma delimited. UrlCubes to load and display in the scene. This would be the input to the dialog, and would be updated when the user enters a new value and clicks OK.
+  spaces: string // comma delimited. UrlCubes to load and display in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
   color?: string // optional color for the boxes, default to green
-  worldName: string // the world to load the spaces from. This is needed because the UrlCubes don't include the world name, and we need it to fetch the properties for the cubes. We could also include the world name in the UrlCubes, but that would be redundant and more complicated to parse.
+  // worldName: string // the world to load the spaces from. This is needed because the UrlCubes don't include the world name, and we need it to fetch the properties for the cubes. We could also include the world name in the UrlCubes, but that would be redundant and more complicated to parse.
+  state: {
+    worldName: string
+    previousCameraPosition: THREE.Vector3
+    timeSinceLastCameraMovement: number
+    theGlobalTree: bvts.BuildVisibleTreeStatus
+  }
 }
 
-export default function OrbitCanvas(props: Props) {
+export default function OrbitCanvas(orbitalProps: Props) {
 
   // default to looking at the origin, but ideally would look at the center of the loaded property or properties. 
   // For now we can just look at the origin and make sure the demo properties are located there.
@@ -26,7 +37,7 @@ export default function OrbitCanvas(props: Props) {
   const size = 2 ** 6;
 
   // do they parse? lol
-  const [spacesArray, error] = oct.ParseCubeList(props.spaces)
+  const [spacesArray, error] = oct.ParseCubeList(orbitalProps.spaces)
   let showTheSpaces = true
   console.log("OrbitCanvas spacesArray ", spacesArray)
   if (error) {
@@ -77,10 +88,11 @@ export default function OrbitCanvas(props: Props) {
           maxPolarAngle={Math.PI / 2} // Prevent looking underneath the ground
         />
 
-        <MainWorldDisplay demoSpaces={props.spaces} worldName={props.worldName} />
+        <MainWorldDisplay demoSpaces={orbitalProps.spaces} state={orbitalProps.state} />
 
       </Canvas >
     </>
   )
+  
 }
 

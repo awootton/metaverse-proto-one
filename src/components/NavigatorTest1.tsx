@@ -83,7 +83,7 @@ export function NavigationControls1(props: NavigationControlsProps) {
                 ⌨️ WASD / Arrows = Move | Space = Up | Shift = Down
             </div> */}
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '4px' }}>
                     <button style={styles} onClick={() => props.cameraRef.current?.moveForward()}>Go ( W/↑)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.moveBackward()}>Back (S/↓)</button>
 
@@ -93,8 +93,8 @@ export function NavigationControls1(props: NavigationControlsProps) {
                     <button style={styles} onClick={() => props.cameraRef.current?.skateLeft()}>Skate Left (A)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.skateRight()}>Skate Right (D)</button>
 
-                    <button style={styles} onClick={() => props.cameraRef.current?.moveUp()}>Up (Space)</button>
-                    <button style={styles} onClick={() => props.cameraRef.current?.moveDown()}>Down (Shift)</button>
+                    <button style={styles} onClick={() => props.cameraRef.current?.moveUp()}>Up (Space/E)</button>
+                    <button style={styles} onClick={() => props.cameraRef.current?.moveDown()}>Down (Shift/C)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.lookUp()}>Look Up (Q)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.lookDown()}>Look Down (Z)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.birdsEye()}>Birds eye (B)</button>
@@ -241,6 +241,10 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
                 case 'd': case 'D':
                     actions.skateRight(); break;
 
+                case 'b': case 'B':
+                    actions.birdsEye(); break;
+                case 'h': case 'H':
+                    actions.home(); break;
                 case 'q': case 'Q':
                     actions.lookUp(); break;
                 case 'z': case 'Z':
@@ -248,7 +252,9 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
                 case ' ':
                     e.preventDefault(); // Stop page scrolling
                     actions.moveUp(); break;
-                case 'Shift':
+                case 'E': case 'e':
+                    actions.moveUp(); break;
+                case 'Shift/': case 'C': case 'c':
                     actions.moveDown(); break;
             }
         };

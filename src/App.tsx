@@ -18,12 +18,25 @@ import Switch from '@mui/material/Switch'
 import { OrbitPropertyDialog } from './components/OrbitPropertyDialog'
 import MyInputDialog from './knotfree-ts-lib/components/MyInputDialog'
 
+import * as bvts from './knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+import { myMapCacheIntf } from './knotfree-ts-lib/3d/CacheIntf'; // just a map.
+
 // 10 meters east and a little south, and 1.75 meters up, which is about eye level for an average person standing on the ground. 
 export const defaultCameraPosition = new THREE.Vector3(-2, 1.75, 10)
 
 import * as ps4 from "./components/PubSub4App"
 
+
+const appVisibleTree = new bvts.BuildVisibleTreeStatus(myMapCacheIntf) // this is the main state that we want to share between the MainWorldDisplay and the OrbitPropertyDialog and other components. It has to live in the parent component, which is the App component. We can pass it down to the MainWorldDisplay and the OrbitPropertyDialog as props, and they can use it to trigger tree traversals and render the cubes in the scene.
+
 export default function App() {
+
+  const appDisplayState = {
+    worldName: "testmain",
+    previousCameraPosition: new THREE.Vector3(1e999, 0, 0),
+    timeSinceLastCameraMovement: 0,
+    theGlobalTree: appVisibleTree // we get our own tree !!
+  }
 
   console.log("App url ", window.location.href)
 
@@ -60,7 +73,7 @@ export default function App() {
 
   React.useEffect(() => {
     console.log("App useEffect 1")
-    ps4.subscribe("DemoPropertiesChanges", "App",(status: Object, err: Error) => {
+    ps4.subscribe("DemoPropertiesChanges", "App", (status: Object, err: Error) => {
       console.log("App got pubsub message", status, err)
       if (status && typeof status === "string") {
         changeDemoProperties(status as string)
@@ -71,9 +84,9 @@ export default function App() {
       }
     })
     return () => {
-     ps4.unsubscribe("DemoPropertiesChanges","App")
-     console.log("App useEffect DemoPropertiesChanges cleanup")
-  };
+      ps4.unsubscribe("DemoPropertiesChanges", "App")
+      console.log("App useEffect DemoPropertiesChanges cleanup")
+    };
   }, [demoPropertiesState])
 
   const cameraControlRef = useRef<nav1.ControlCameraRef>(null);
@@ -116,7 +129,16 @@ export default function App() {
 
         <nav1.NavigationCamera cameraRef={cameraControlRef} />
 
-        <MainWorldDisplay worldName={worldName} demoSpaces={demoPropertiesState} />
+        {/* // <MainWorldDisplay worldName={worldName} demoSpaces={demoPropertiesState} /> */}
+
+        <MainWorldDisplay demoSpaces={demoPropertiesState} state={appDisplayState} />
+
+        {/* worldName: string  state: WorldDisplayState
+        
+            previousCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
+            timeSinceLastCameraMovement: number // = 0
+            // what does it mean to have two copies of THIS gadget? 
+            theGlobalTree: bvts.BuildVisibleTreeStatus // = new bvts.BuildVisibleTreeStatus(myMapCacheIntf) */}
 
       </Canvas >
 
@@ -169,6 +191,8 @@ export default function App() {
 
     </>
   )
+
+
 
   function toggleHideHelpOnStart() {
     let hideHelpOnStart = localStorage.getItem("hideHelpOnStart");

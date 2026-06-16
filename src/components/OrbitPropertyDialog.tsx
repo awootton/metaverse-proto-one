@@ -1,6 +1,10 @@
 import React from 'react';
 import { FC, ReactElement } from 'react'
 
+import * as THREE from 'three';
+
+import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+
 // material ui
 import {
     Dialog,
@@ -21,6 +25,10 @@ import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 
 import * as ps4 from './PubSub4App'
 import OrbitCanvas from './OrbitCanvas';
+import { WorldDisplayState } from './WorldDisplayState';
+import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
+// import * as bvts from './knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+
 
 type Props = {
     open: boolean
@@ -30,9 +38,18 @@ type Props = {
     // box: oct.Cube
     spaces: string // comma delimited.
     worldName: string
+
+    /// state: WorldDisplayState
 }
 
 export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement => {
+
+    const state = {
+        worldName: "testmain",
+        previousCameraPosition: new THREE.Vector3(1e999, 0, 0),
+        timeSinceLastCameraMovement: 0,
+        theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+    }
 
     const demoProperties = localStorage.getItem("demoProperties") // this is just for demo purposes, to show how you could save the entered properties for later use. In a real application, you would likely want to handle this differently, such as saving it to a database or using a state management solution.
     const [demoPropertiesState, setDemoPropertiesState] = React.useState(demoProperties || "")
@@ -49,7 +66,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
 
     React.useEffect(() => {
         console.log("OrbitPropertyDialog useEffect 1")
-        ps4.subscribe("DemoPropertiesChanges", "OrbitPropertyDialog",(status: Object, err: Error) => {
+        ps4.subscribe("DemoPropertiesChanges", "OrbitPropertyDialog", (status: Object, err: Error) => {
             console.log("OrbitPropertyDialog got pubsub message", status, err)
             if (status && typeof status === "string") {
                 changeDemoProperties(status as string)
@@ -60,7 +77,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
             }
         })
         return () => {
-            ps4.unsubscribe("DemoPropertiesChanges","OrbitPropertyDialog")
+            ps4.unsubscribe("DemoPropertiesChanges", "OrbitPropertyDialog")
             console.log("OrbitPropertyDialog useEffect DemoPropertiesChanges cleanup")
         };
     }, [demoPropertiesState])
@@ -151,10 +168,12 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
                 </Box>
 
 
-                <OrbitCanvas spaces={demoPropertiesState} worldName={props.worldName} />
+                <OrbitCanvas spaces={demoPropertiesState}
+                    state={state} />
             </Dialog>
         </>
     );
+
 };
 
 export default OrbitPropertyDialog;

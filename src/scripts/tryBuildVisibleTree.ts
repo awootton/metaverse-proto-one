@@ -10,6 +10,8 @@ import { WriteAllTheCubeCacheOut, ReadAllTheCubeCacheIn } from './CacheFileStuff
 
 import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
 
+import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus'
+
 // garbage import { clearCache, myFileCacheIntf } from './DiskedCache';
 
 // command to execute. in a javascript debug terminal: npx ts-node src/scripts/tryBuildVisibleTree.ts
@@ -22,7 +24,7 @@ async function doTheScript() {
     // just load cache when we're done and then write at the end.
     // ReadAllTheCubeCacheIn()
 
-    const builder = new octload.BuildVisibleTreeStatus(myMapCacheIntf)
+    const builder = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
     const position = new THREE.Vector3(-2, 1.75, 10)
     const got = await builder.BuildVisibleTree("testmain", position)
 

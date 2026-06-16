@@ -45,7 +45,7 @@ export function DrawDogComponent(props: { cube: oct.Cube }) {
 
   // console.log('loaded gltf mesh', gltf);
   const size = 2 ** props.cube.p
-  console.log('cube size', size)
+  console.log('DrawDogComponent cube size', size)
   const xpos = props.cube.x + size / 2
   const ypos = props.cube.y + size / 2
 
@@ -59,10 +59,7 @@ export function DrawDogComponent(props: { cube: oct.Cube }) {
       <primitive object={scene} />
     </mesh>
 
-
-    {/* <primitive object={scene} /> */}
-
-    <Text position={[xpos, props.cube.y + size * .8, zpos]} fontSize={1.5} color="purple">Big Dog Models</Text>
+    <Text position={[xpos, props.cube.y + size * .8, props.cube.z + size / 2 + size /4]} fontSize={1.5} color="purple">Big Dog Models</Text>
   </>
   );
 }

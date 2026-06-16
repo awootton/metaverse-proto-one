@@ -86,6 +86,17 @@ export function UnBoxIt(message: Buffer, nonce: Buffer, theirPublicKey: Buffer, 
     return result
 }
 
+// a crappy hash function
+export function djb2Hash(str: string): number {
+  let hash = 5381;
+  
+  for (let i = 0; i < str.length; i++) {
+    // Left shift bitwise operation combined with character extraction
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  
+  return hash >>> 0; // Converts result into an unsigned 32-bit integer
+}
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE
