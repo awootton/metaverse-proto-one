@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import React from 'react';
 
-import { defaultCameraPosition } from '../App'
+import { DefaultCameraPosition } from '../components/AppCanvas'
 import { FlatCompass } from './flatCompass';
 
 
@@ -93,8 +93,8 @@ export function NavigationControls1(props: NavigationControlsProps) {
                     <button style={styles} onClick={() => props.cameraRef.current?.skateLeft()}>Skate Left (A)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.skateRight()}>Skate Right (D)</button>
 
-                    <button style={styles} onClick={() => props.cameraRef.current?.moveUp()}>Up (Space/E)</button>
-                    <button style={styles} onClick={() => props.cameraRef.current?.moveDown()}>Down (Shift/C)</button>
+                    <button style={styles} onClick={() => props.cameraRef.current?.moveUp()}>Up (E)</button>
+                    <button style={styles} onClick={() => props.cameraRef.current?.moveDown()}>Down (C)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.lookUp()}>Look Up (Q)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.lookDown()}>Look Down (Z)</button>
                     <button style={styles} onClick={() => props.cameraRef.current?.birdsEye()}>Birds eye (B)</button>
@@ -121,7 +121,7 @@ interface NavigationCameraControlsProps {
 export function NavigationCamera(props: NavigationCameraControlsProps) {
     // Target states for fluid camera physics
     // THIS is actually where the default camera position is set.
-    const targetPosition = useRef(defaultCameraPosition.clone());
+    const targetPosition = useRef(DefaultCameraPosition.clone());
     const targetRotationY = useRef(0);
     const targetRotationX = useRef(0);
 
@@ -175,21 +175,21 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
             actions.changeCount += 1;
         },
         home: () => {
-            targetPosition.current = defaultCameraPosition.clone();
+            targetPosition.current = DefaultCameraPosition.clone();
             targetRotationY.current = 0;
             targetRotationX.current = 0
             actions.changeCount += 1;
         }
 
         ,
-        lookDown: () => {
-            if (targetRotationX.current > -.75 * Math.PI / 2) {
+        lookDown: () => { // almost all the way up.
+            if (targetRotationX.current > -.85 * Math.PI / 2) {
                 targetRotationX.current -= turnAngle;
             }
             actions.changeCount += 1;
         },
-        lookUp: () => {
-            if (targetRotationX.current < .1 * Math.PI / 2) {
+        lookUp: () => { // almost all the way down.
+            if (targetRotationX.current < .85 * Math.PI / 2) {
                 targetRotationX.current += turnAngle;
             }
             actions.changeCount += 1;
@@ -226,15 +226,24 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             switch (e.key) {
-                case 'w': case 'W': case 'ArrowUp':
+                case 'w': case 'W':
                     actions.moveForward(); break;
-                case 's': case 'S': case 'ArrowDown':
+                case 'ArrowUp':
+                     actions.moveForward(); break;
+                     e.preventDefault();
+
+                case 's': case 'S':
                     actions.moveBackward(); break;
+                case 'ArrowDown':
+                    actions.moveBackward(); break;
+                    e.preventDefault();
 
                 case 'ArrowLeft':
                     actions.turnLeft(); break;
+                    e.preventDefault();
                 case 'ArrowRight':
                     actions.turnRight(); break;
+                    e.preventDefault();
 
                 case 'a': case 'A':
                     actions.skateLeft(); break;
@@ -249,23 +258,38 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
                     actions.lookUp(); break;
                 case 'z': case 'Z':
                     actions.lookDown(); break;
-                case ' ':
-                    e.preventDefault(); // Stop page scrolling
-                    actions.moveUp(); break;
+                // case ' ':
+                    // good lord. This is shit is 3 hours of my life I'll never get back
+                    // e.preventDefault(); // Stop page scrolling
+                    // It meant I couldn't make spaces in an input dialog.
+                    // total garbage. 
+                //    actions.moveUp(); break;
                 case 'E': case 'e':
                     actions.moveUp(); break;
-                case 'Shift/': case 'C': case 'c':
+                // absolutely not case 'Shift/': 
+                case 'C': case 'c':
                     actions.moveDown(); break;
             }
         };
 
+        // We STILL need to unhook this addEventListener when we're not using it. damn. How? 
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        console.log("NavigationCamera installation: added keydown listener");
+
+        return () => {
+            // how do we make THIS happen so that the dialog will work? Just don't make the main canvas!!! 
+            console.log("NavigationCamera cleanup: removing keydown listener");
+            window.removeEventListener('keydown', handleKeyDown);
+        }
     }, []);
 
     // Frame loop interpolation
     useFrame((state) => {
         state.camera.position.lerp(targetPosition.current, 0.1);
+
+        camera.rotation.order = 'YXZ'; // vitally important. Otherwise the rotations will be applied in the wrong order and you'll get gimbal lock and other weirdness.
+        
         state.camera.rotation.y = THREE.MathUtils.lerp(state.camera.rotation.y, targetRotationY.current, 0.1);
         state.camera.rotation.x = THREE.MathUtils.lerp(state.camera.rotation.x, targetRotationX.current, 0.1);
 
@@ -274,3 +298,18 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
 
     return null;
 }
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

@@ -3,7 +3,10 @@
 import React, { useEffect } from 'react';
 'use client';
 
-import * as pubsub from './PubSubSession';
+import * as pubsub from './PubSubSimple';
+
+
+// garbage 
 
 const string2ElementMap = new Map<string, HTMLIFrameElement>()
 

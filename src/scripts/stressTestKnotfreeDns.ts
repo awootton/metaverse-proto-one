@@ -1,62 +1,19 @@
-
-
-// import * as dns from "dns/promises" NOPE. We can't use this.
+// import * as dns from "dns/promises" NOPE. Never. We can't use this.
 
 import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
 
-import * as atwdns from '../knotfree-ts-lib/3d/DnsTypes'
+// This is actually testing api1/dns-query and not the api1/nameService. probably because dns-query is public, no keys required.
+// ultimitaly it does call: 	command := "get option " + typeStr + " " + subkey // eg get option A
 
-// command to execute: npx ts-node src/scripts/stressTestKnotfreeDns.ts
-
-// FetchDnsResponse takes a comma-separated list of dns names and returns a DnsResponse or an Error. or an array of DnsResponses if the comma-separated list contains multiple names.
-// It requires type to be TXT or A.
-// It also requires a dnsServer, like "1.1.1.1" (cloudflare) or "8.8.8.8" (google).
-// UNLESS knotfreeNative is true, then it will use the knotfree native dns resolver inside of knotfree.net
-// we do this to test world building without having to spend boucoup $$$ buying domain
-export async function xFetchDnsResponseTryHard(commaList: string, type: "TXT" | "A", dnsServer: string, knotfreeNative: boolean):
-    Promise<atwdns.DnsResponse[] | Error> {
-
-    // for 30 second, keep trying to fetch the dns response until we get a response that is not an error, or until we get a reasonable response. 
-    // This is to test the stability of the knotfree dns resolver under load.
-
-    const startTime = Date.now()
-    let lastError: Error | null = null
-    while (Date.now() - startTime < 30000) {
-        try {
-            let hadUnexpectedStatus = false
-
-            const response = await atwdns.FetchDnsResponse(commaList, type, dnsServer, knotfreeNative)
-            if (response instanceof Error) {
-                lastError = response
-                console.error(`Error fetching DNS response: ${response}. Retrying...`)
-                hadUnexpectedStatus = true
-            } else {
-                // they have to be either 0 or 3. 
-                // SERVFAIL is NOT an answer.
-                // when we get a 3 we need to be 100% the name actually doesn't exist.
-                for (const r of response) {
-                    if (r.Status !== 0 && r.Status !== 3) {
-                        lastError = new Error(`Unexpected DNS response status: ${r.Status}. Retrying...`)
-                        hadUnexpectedStatus = true
-                    }
-                }
-                if (!hadUnexpectedStatus) {
-                    // they look legit. This is the normal/common case.
-                    // the other things are server and internet issues.
-                    return response
-                }
-                // else keep trying.
-            }
-        } catch (err) {
-            lastError = err as Error
-            console.error(`Exception fetching DNS response: ${lastError}. Retrying...`)
-        }
-    }
-    return lastError || new Error("Unknown error fetching DNS response")
-}
+// command to execute: 
+// npx ts-node src/scripts/stressTestKnotfreeDns.ts
 
 
 async function doTheScript() {
+
+    // dnstypes.SetKnotfreeServer("https://knotfree.net") // test against prod.
+    // dnstypes.SetKnotfreeServer("http://knotfree.io") // test against prod.
 
     let theName = "meta_group_id.testmain-0n0u0e16p-0.vr"
     let count = 0
@@ -64,7 +21,7 @@ async function doTheScript() {
     for (let i = 0; i < 9999999; i++) {
         // console.log(`FetchDnsResponseTryHard attempt ${i + 1}`)
         const startTime = Date.now()
-        const response = await atwdns.FetchDnsResponseTryHard(theName, "TXT", "xxx", true)
+        const response = await dnstypes.FetchDnsResponseTryHard(theName, "TXT", "xxx", true)
         const endTime = Date.now()
         const duration = endTime - startTime
         // console.log(`FetchDnsResponseTryHard result for attempt ${i + 1}:`, response)
@@ -112,3 +69,18 @@ function setTimer() {
     }, 100)
 }
 
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

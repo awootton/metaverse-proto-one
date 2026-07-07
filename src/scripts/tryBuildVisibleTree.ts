@@ -8,29 +8,64 @@ import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
 
 import { WriteAllTheCubeCacheOut, ReadAllTheCubeCacheIn } from './CacheFileStuff';
 
-import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
+// import * as loaders from '../knotfree-ts-lib/3d/OctTreeLoaders'
 
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus'
 
+import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
+
 // garbage import { clearCache, myFileCacheIntf } from './DiskedCache';
 
-// command to execute. in a javascript debug terminal: npx ts-node src/scripts/tryBuildVisibleTree.ts
+// command to execute. in a javascript debug terminal: 
+// npx ts-node src/scripts/tryBuildVisibleTree.ts
 
 // implement a better cache . in here. keep it away from the browser files. 
 
+// the concept is simple
+/* 
+    prepare a list of promises for the cubes we want to fetch.
+    settle them all in parallel.
+    the good ones go into an array and the bad ones go into a list and we also make a mapping of index from new list to old.
+    recurse. 
+
+    Then we do it again to get the TXT records. It should be the same code even, with generic types.
+    // last time I wrote this I spend 7 hours and it wasn't right. I didn't prepare for the recursion 
+    // and I didn't test that way up front. 
+*/
 
 async function doTheScript() {
+
+    // to test prod:
+    // dnstypes.SetKnotfreeServer("https://knotfree.net") // test in prod.
+
+    oct.gCubeCache.clear() // start with an empty cache. 
 
     // just load cache when we're done and then write at the end.
     // ReadAllTheCubeCacheIn()
 
+    let startingTime = Date.now()
+
     const builder = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
     const position = new THREE.Vector3(-2, 1.75, 10)
     const got = await builder.BuildVisibleTree("testmain", position)
+    let endingTime = Date.now()
+    console.log("Time taken to BuildVisibleTreeStatus: ", endingTime - startingTime, "ms for 1 run.", "or", (endingTime - startingTime) / 1, "ms per run.")
+    // 2.5 minutes for the slow version.
 
     console.log("got ", got) // this is the error.
     // here's what we want:
-    console.log("showingLeaves: ", builder.showingLeaves)
+    console.log("showingLeaves: ", builder.showingLeaves.size)
+
+    // This was all the two way lookups. Prepared especially for a test in go.
+    // I can't use this: 
+    //  '"testmain-0n0u7w5p-0","testmain-0n0u7w5p-1","testmain-0n0u7w5p-2","testmain-0n0u7w5p-3","testmain-0n0u7w5p-4","testmain-0n0u7w5p-5","testmain-0n0u7w5p-6","testmain-0n0u7w5p-7","testmain-0n0u14w4p","testmain-1n0u14w4p","testmain-0n1u14w4p","testmain-1n1u14w4p","testmain-0n0u13w4p","testmain-1n0u13w4p","testmain-0n1u13w4p","testmain-1n1u13w4p"',
+    let namesMappedWithCommas = "" // octload.allTheNames.join(",\n")
+    // they have single quotes that have to go. 
+    // for (const name of octload.allTheNames) {
+    //     const tmp = "    " + name + ",\n" // why is this hard? name.substring(1, name.length - 1) // remove the single quotes
+    //     namesMappedWithCommas += tmp
+    // }
+    // console.log("var names = [][]string{\n", namesMappedWithCommas, "\n}\n")
 
     function sleep(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -118,27 +153,34 @@ async function doTheScript() {
         // }
     }
 
-    const startingTime = Date.now()
-    const runs = 100
+    startingTime = Date.now()
+    const runs = 100 //100 * 99999
     for (let i = 0; i < runs; i++) {
-        const got = await builder.BuildVisibleTree("testmain", new THREE.Vector3(0, 0, 0))
+
+        // oct.gCubeCache.clear() // total torture test start with an empty cache.
+        // it still screams because of cache in server. 127.73 ms per run. - not too bad
+
+        // if we don't clear the cache we get:  1.92 ms per run.  why so slow? </sarcasm
+
+        // total torture test. No respite.
+        const prom = builder.BuildVisibleTree("testmain", new THREE.Vector3(0, 0, 0))
+        const got = await prom
         if (got instanceof Error) {
             console.error("Error in BuildVisibleTree: ", got)
         } else {
-            if (builder.showingLeaves.size !== 1) {
-                console.error("Error: showingLeaves is wrong. ", got)
+            if (builder.showingLeaves.size !== 77) {
+                console.error("Error: showingLeaves is not 77. ", builder.showingLeaves.size)
             }
             if (cacheSize !== oct.gCubeCache.size) {
                 console.error("Error: cache size changed. ", got)
             }
         }
     }
-    const endingTime = Date.now()
+    endingTime = Date.now()
     console.log("Time taken: ", endingTime - startingTime, "ms for ", runs, " runs.", "or", (endingTime - startingTime) / runs, "ms per run.")
     // Time taken:  165 ms for  1000  runs. or 0.165 ms per run.
 
     console.log("cache entries count: ", oct.gCubeCache.size)
-
 
     WriteAllTheCubeCacheOut()
 
@@ -233,3 +275,19 @@ function setTimer() {
         }
     }, 100)
 }
+
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

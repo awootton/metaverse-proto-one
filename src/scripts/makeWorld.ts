@@ -3,7 +3,36 @@
 
 // import * as dns from "dns/promises"
 
-import { sendNameserviceCommand } from "./sendTheCommand"
+// import { sendNameserviceCommand } from "./sendTheCommand"
+import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import { sendNameserviceCommand, sendNameserviceCommandHarder } from "../knotfree-ts-lib/3d/NamesApi"
+import { GetTheKeys } from '../knotfree-ts-lib/3d/ReserveVrFunction'
+
+{
+let asset = "color:#545454" // a road color from the web.
+let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+console.log("isImage:", isImage)
+}
+{
+let asset = "street.jpg" // a road color from the web.
+let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+console.log("isImage:", isImage)
+}
+
+{
+let asset = "street.jpg:repeat:10" // a road color from the web.
+let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+console.log("isImage:", isImage)
+}
+
+
+
+console.log("isImage:")
+console.log("isImage:")
+console.log("isImage:")
+
+
+// test the knotfree sendNameserviceCommand api
 
 // excercise the knotfree.net API to reserve a name and create a world. 
 // it doesn't really create anything, See tryingToReserve.ts for that. This is just to test the API calls and get a feel for how it works.
@@ -38,7 +67,37 @@ async function doTheScript() {
     console.log("Doing the script")
 
     // lookup a dns name from dns server
-  
+    const [[pubk, priv], bigKnotfreeToken, err] = GetTheKeys()
+    if (err) {
+        console.error("Error getting keys:", err)
+        return
+    }
+
+    // let res = await sendNameserviceCommandHarder("help", "no_name_needed", { pubk, priv })
+    // console.log("help made the grade", res)
+
+
+    const groupTextParameters: oct.GroupTextParameters = {
+        id: "TmWyJB7iiPiEvT1HsyuFz6pK", // they can all draw, and act, together.
+        dbg: "localhost:3010",
+        type: "floor",
+        asset: "color:#545454" // a road color from the web.
+    }
+    const gtpString = JSON.stringify(groupTextParameters)
+    console.log("groupTextParameters string:", gtpString)
+    // except, the # breaks it so we have to base64url encode it.
+    const gtpStringBase64Url = Buffer.from(gtpString).toString('base64url')
+    console.log("groupTextParameters string base64url:", gtpStringBase64Url)
+    // add an "=" to the START so we'll know it's base64url encoded when it gets to the server.
+    // this is a CRAP convention that I made up and I apologize for it. 
+    const gtpStringBase64UrlWithEquals = "=" + gtpStringBase64Url
+    console.log("groupTextParameters string base64url with equals:", gtpStringBase64UrlWithEquals)
+
+    let res = await sendNameserviceCommand("set option txt meta_group_id " + gtpStringBase64UrlWithEquals, "testmain-1n0u1w4p_vr", { pubk, priv })
+    console.log("set option txt meta_group_id", res)
+    console.log("set option txt meta_group_id", res)
+
+
     // try {
     //     const resolver = new dns.Resolver();
     //     // resolver.setServers(['8.8.8.8', '8.8.4.4']);
@@ -53,23 +112,24 @@ async function doTheScript() {
 
     //await sendNameserviceCommand("help","none")
 
-    await sendNameserviceCommand("help","none")
+    res = await sendNameserviceCommandHarder("help", "no_name_needed", { pubk, priv })
+    console.log("exists get-unix-time", res)
 
 
     // eg  command := "reserve " + name + " " + token
     // or  
-    let res = await sendNameserviceCommand("exists ", "get-unix-time")
+    res = await sendNameserviceCommand("exists ", "get-unix-time", { pubk, priv })
     console.log("exists get-unix-time", res)
-   
-    res = await sendNameserviceCommand("exists", "get-unix-time_iot")
+
+    res = await sendNameserviceCommand("exists", "get-unix-time_iot", { pubk, priv })
     console.log("exists get-unix-time_iot", res)
 
-    res = await sendNameserviceCommand("details", "alan-t-wootton_iot")
+    res = await sendNameserviceCommand("details", "alan-t-wootton_iot", { pubk, priv })
     console.log("details alan-t-wootton_iot", res)
 
-    res = await sendNameserviceCommand("set option txt @ default_value", "alan-t-wootton_iot")
+    res = await sendNameserviceCommand("set option txt @ default_value", "alan-t-wootton_iot", { pubk, priv })
     console.log("set option alan-t-wootton_iot", res)
-    res = await sendNameserviceCommand("set option txt test1 test1_value", "alan-t-wootton_iot")
+    res = await sendNameserviceCommand("set option txt test1 test1_value", "alan-t-wootton_iot", { pubk, priv })
     console.log("set option alan-t-wootton_iot", res)
 
     finished = true
@@ -89,3 +149,17 @@ function setTimer() {
     }, 100)
 }
 
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

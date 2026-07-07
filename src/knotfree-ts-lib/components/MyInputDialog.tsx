@@ -24,6 +24,7 @@ type Props = {
     onConfirm: (str: string) => any
     label: string // the label of the text field
     default: string // default text in the input
+    inject?: React.ReactElement
 }
 
 export const MyInputDialog: FC<Props> = (props: Props): ReactElement => {
@@ -42,21 +43,30 @@ export const MyInputDialog: FC<Props> = (props: Props): ReactElement => {
     //sx={{ position: 'absolute', top: 8, right: 8 }}
     //             <Box position="absolute" top={0} right={0}>
 
+    function pStyle() {
+        return {
+            margin: '2px 4px',
+            fontSize: '16px',
+            fontFamily: 'Inter, sans-serif'
+        }
+    }
+
     return (
-        (<Dialog open={props.open} maxWidth="sm" fullWidth
+
+        <Dialog open={props.open} maxWidth="sm" fullWidth
             onClose={props.onClose}
         >
             <DialogTitle>{props.title}</DialogTitle>
             <Box sx={{ position: 'absolute', top: 0, right: 0 }} >
                 <IconButton onClick={props.onClose} size="large">
-                    <Close  />
+                    <Close />
                 </IconButton>
             </Box>
             <DialogContent>
-            {/* <Typography>{props.body}</Typography> */}
-            <div className="likeTypography" >{props.body}</div>
-            <br />
-            <TextField
+                {/* <Typography>{props.body}</Typography> */}
+                <div className="likeTypography" style={pStyle()}>{props.body}</div>
+                <br />
+                <TextField
                     autoFocus
                     onChange={textClicked}
                     // id="outlined-helperText"
@@ -73,12 +83,11 @@ export const MyInputDialog: FC<Props> = (props: Props): ReactElement => {
                 <Button color="secondary" variant="contained" onClick={confirmMe}>
                     Confirm
                 </Button>
+                {props.inject}
             </DialogActions>
-        </Dialog>)
+        </Dialog>
     );
 };
-
-export default MyInputDialog;
 
 // Copyright 2021-2022 Alan Tracey Wootton
 // See LICENSE

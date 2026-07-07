@@ -1,58 +1,70 @@
 import React, { useRef, useEffect } from 'react'
 
-
 import { Canvas } from '@react-three/fiber'
 import { MainWorldDisplay } from './MainWorldDisplay'
 
 import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 
+import { RootState, useFrame, useThree } from '@react-three/fiber'
+
+
 // a make a canvas thst shows MainWorldDisplay, Just like the other one.
 // orbit around the box.
 
 import { OrbitControls } from '@react-three/drei';
-import { OutlineBoxComponent } from './OutlineBoxComponent';
+import { Stats } from '@react-three/drei'
+import { Perf } from 'r3f-perf'
+import { useTexture } from '@react-three/drei'
+
 
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'; // just a map.
+import { WorldDisplayState } from './WorldDisplayState';
+import { Background, Backdrop, Backcube } from './AppCanvas';
 
 // const appVisibleTree = new bvts.BuildVisibleTreeStatus(myMapCacheIntf);
 
 export type Props = {
-  spaces: string // comma delimited. UrlCubes to load and display in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
-  color?: string // optional color for the boxes, default to green
-  // worldName: string // the world to load the spaces from. This is needed because the UrlCubes don't include the world name, and we need it to fetch the properties for the cubes. We could also include the world name in the UrlCubes, but that would be redundant and more complicated to parse.
-  state: {
-    worldName: string
-    previousCameraPosition: THREE.Vector3
-    timeSinceLastCameraMovement: number
-    theGlobalTree: bvts.BuildVisibleTreeStatus
-  }
+  // spaces: string // comma delimited. UrlCubes to load and display in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
+  // color?: string // optional color for the boxes, default to green. get rid of this.
+  worldDisplayState: WorldDisplayState
+  showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
+
+  shouldShowOrbitalCanvasDisplay: boolean // turn the whole thing off when it's hidden.
+
 }
 
 export default function OrbitCanvas(orbitalProps: Props) {
 
+  console.log("OrbitCanvas starting with props: ", orbitalProps)
+
   // default to looking at the origin, but ideally would look at the center of the loaded property or properties. 
   // For now we can just look at the origin and make sure the demo properties are located there.
-  const targetPosition: [number, number, number] = [0, 1.75, 0];
+  // target position should be where you were standing when you clicked the button to open the orbit canvas. 
+
+  const targetPosition: [number, number, number] = [0, 1.75, -40];
   const size = 2 ** 6;
 
+
+  // TODO: fix the target position to something ...
+
   // do they parse? lol
-  const [spacesArray, error] = oct.ParseCubeList(orbitalProps.spaces)
-  let showTheSpaces = true
-  console.log("OrbitCanvas spacesArray ", spacesArray)
-  if (error) {
-    // and empty list is not really an error console.error("Error parsing spaces: ", error)
-    showTheSpaces = false
-  } else {
-    // if they do parse then center on the first one.
-    if (spacesArray.length > 0) {
-      const firstCube = spacesArray[0]
-      const cubeSize = 2 ** firstCube.p
-      targetPosition[0] = firstCube.x + cubeSize / 2
-      targetPosition[1] = firstCube.y + cubeSize / 2
-      targetPosition[2] = firstCube.z + cubeSize / 2
-    }
-  }
+  // const [spacesArray, error] = oct.ParseCubeList(orbitalProps.spaces)
+  // let showTheSpaces = true
+  // console.log("OrbitCanvas spacesArray ", spacesArray)
+  // if (error && orbitalProps.spaces !== "") {
+  //   // and empty list is not really an error 
+  //   console.error("Error parsing spaces: ", error)
+  //   showTheSpaces = false
+  // } else {
+  //   // if they do parse then center on the first one.
+  //   if (spacesArray.length > 0) {
+  //     const firstCube = spacesArray[0]
+  //     const cubeSize = 2 ** firstCube.p
+  //     targetPosition[0] = firstCube.x + cubeSize / 2
+  //     targetPosition[1] = firstCube.y + cubeSize / 2
+  //     targetPosition[2] = firstCube.z + cubeSize / 2
+  //   }
+  // }
 
   // function MakeBoxesForSpaces() {
   //   if (!showTheSpaces) return null
@@ -62,37 +74,98 @@ export default function OrbitCanvas(orbitalProps: Props) {
   //         <OutlineBoxComponent key={index} cube={cube} errorMsg={undefined} color={"green"} />
   //       ))}
   //     </>
-  //   )
+  //   )   sky blue: \(\text{\#87CEFA}\)  #cfecf7 
   // }
+
+  if (!orbitalProps.shouldShowOrbitalCanvasDisplay) {
+    return (
+      <div>
+        canvas turned off.
+      </div>
+    )
+  }
 
   return (
     <>
 
       <Canvas id="canvas"
+        style={{ backgroundColor: '#cfecf7 ' }}
       >
 
-        <ambientLight intensity={0.25} />
-
-        {/* Positioned light that can cast shadows */}
-        <directionalLight
-          position={[10, 10, 5]}
-          intensity={1.5}
+        <OrbitCanvasInTheCanvas
+          worldDisplayState={orbitalProps.worldDisplayState}
+          showingLeaves={orbitalProps.showingLeaves}
+          shouldShowOrbitalCanvasDisplay={orbitalProps.shouldShowOrbitalCanvasDisplay}
         />
-
-        <OrbitControls
-          target={targetPosition}
-          enableDamping={true} // Smooth stopping momentum
-          dampingFactor={0.05}
-          maxDistance={10 * size}     // Limit how far user can zoom out
-          minDistance={0.5 * size}      // Limit how far user can zoom in
-          maxPolarAngle={Math.PI / 2} // Prevent looking underneath the ground
-        />
-
-        <MainWorldDisplay demoSpaces={orbitalProps.spaces} state={orbitalProps.state} />
 
       </Canvas >
     </>
   )
-  
+
+}
+
+// only the 3d part
+export function OrbitCanvasInTheCanvas(orbitalProps: Props) {
+
+  let theCameraPosition: [number, number, number] = [0, 1.75, 0]
+  let farClip = 9999
+
+  const size = 2 ** 6;
+
+
+  useFrame((state: RootState, delta: number) => {
+
+    const camera = state.camera
+
+    camera.far = 5000; // Set your desired distance
+    camera.updateProjectionMatrix(); // Critical: Update Three.js matrix
+
+
+    theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
+    farClip = camera.far
+
+  })
+
+  const targetPosition: [number, number, number] = [orbitalProps.worldDisplayState.currentCameraPosition.x, orbitalProps.worldDisplayState.currentCameraPosition.y, orbitalProps.worldDisplayState.currentCameraPosition.z];
+
+  console.log("OrbitCanvasInTheCanvas starting with position: ", orbitalProps.worldDisplayState.currentCameraPosition)
+
+  return (
+    <>
+
+      {/* <Stats /> */}
+      <Perf position="bottom-right" minimal />
+
+      <ambientLight intensity={0.25} />
+
+      {/* Positioned light that can cast shadows */}
+      <directionalLight
+        position={[-10, 10, 5]}
+        intensity={1.5}
+      />
+
+      <OrbitControls
+        target={targetPosition}
+        enableDamping={true} // Smooth stopping momentum
+        dampingFactor={0.05}
+        maxDistance={10 * size}     // Limit how far user can zoom out
+        minDistance={0.5 * size}      // Limit how far user can zoom in
+        maxPolarAngle={Math.PI / 2} // Prevent looking underneath the ground
+      />
+
+      {/* <Background /> */}
+      {/* <Backdrop /> */}
+      {/* <Backcube position={theCameraPosition} farClip={farClip} /> */}
+
+      <MainWorldDisplay
+        // demoSpaces={orbitalProps.spaces}
+        state={orbitalProps.worldDisplayState}
+        showingLeaves={orbitalProps.showingLeaves}
+        indexBase={1000}
+      // {...orbitalProps.worldDisplayState} // this is a bit of a mess. maybe we should just pass the whole state object as a prop, instead of trying to spread it out into individual props. but this is fine for now, not ideal. 
+      />
+
+    </>
+  )
 }
 

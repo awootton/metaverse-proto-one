@@ -1,9 +1,8 @@
 {
     "include": [
-        "./src/**/*"
-, "my-isomorphic-library"    ],
+        "./src/**/*" 
+    ],
     "compilerOptions": {
-
         // I hate node link errors. it's ruining my life.
         // simply won't work "target": "ES2022", // atw
         // when it's like this I have to use shitty map iterators. 
@@ -12,10 +11,8 @@
         // "module": "NodeNext", // atw added this 6/2/26 to fix "Cannot use import statement outside a module" with stupid vitest
         // "moduleResolution": "NodeNext", // atw
         // "moduleDetection": "force", // atw
-
         "downlevelIteration": true, // atw
         "ignoreDeprecations": "6.0",
-
         "strict": true,
         "esModuleInterop": true,
         "lib": [

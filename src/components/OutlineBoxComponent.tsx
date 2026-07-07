@@ -14,11 +14,102 @@ import StandingPerson from './StandingPerson';
 import { useRef } from 'react';
 import { Group } from 'three';
 import * as utils from '../knotfree-ts-lib/3d/utils';
+import * as leaves from './LeafRenderingComponent';
 
-// Draw small boxes in the 4 lower corners of a cube, to make it easier to see the outline of the cube.
-// what a mess. You should see my room.
-export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | undefined, color?: string, propsMessage: string }) {
-    const cube = props.cube
+export type OutlineBoxComponentProps = {
+    // cube: oct.Cube, do we have the whole TreeStatus? Just pass that in.
+    // cube: oct.Cube,
+    treeStatus: oct.TreeStatus,
+    errorMsg?: string,
+    color?: string,
+    propsMessage: string,
+    forceChainLink?: boolean
+    indexBase : number
+}
+
+// just draw the outline and the label. Delete the crap in the messy one below. It's a mess.
+// if it's far we skip the text. Chain link is turned off.
+export function OutlineBoxComponentPlain(props: OutlineBoxComponentProps) {
+    const cube = props.treeStatus.cube
+    const plainColorHere = props.color || "royalblue"
+
+    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+
+    const width = (2 ** cube.p)
+
+    const markerSize = 1 / 16 * (2 ** cube.p)
+
+    // needs no testure const texture = useTexture('/images/chainlink-w-alpha.png');
+
+    // console.log(`OutlineBoxComponentPlain cube`, cube, `size`, markerSize)
+    // const halfSize = size / 2
+    const corners: [number, number, number][] = [
+        [cube.x + 0, cube.y + 0, cube.z + 0],
+        [cube.x + width, cube.y + 0, cube.z + 0],
+        [cube.x + 0, cube.y + 0, cube.z + width],
+        [cube.x + width, cube.y + 0, cube.z + width],
+    ]
+    // these corners are the corners of the cube, but we want to draw small boxes at these corners, so we need to adjust the positions of the small boxes to be centered on the corners.
+    // to do this, we need to subtract half the size of the small box from each corner position.
+    for (let i = 0; i < corners.length; i++) {
+        corners[i][0] += corners[i][0] - center[0] > 0 ? -markerSize / 2 : markerSize / 2
+        corners[i][1] += corners[i][1] - center[1] > 0 ? -markerSize / 2 : markerSize / 2
+        corners[i][2] += corners[i][2] - center[2] > 0 ? -markerSize / 2 : markerSize / 2
+    }
+    let label = oct.CubeToString(cube)[0].split('-')[1] // just the part after the world name, which is the part that encodes the position and size of the cube.
+    // if (props.errorMsg) {
+    //     label += "\n" + props.errorMsg
+    // }
+    // const textColor = plainColorHere
+    // const errorColor = props.errorMsg ? "red" : color
+
+    let distance = 0
+    //  calc some LOD
+
+    // can't see the mesh after about  83 meters
+    useFrame((state: RootState, delta: number) => {
+        distance = state.camera.position.distanceTo(new THREE.Vector3(center[0], center[1], center[2]))
+    })
+
+    // if (distance > 100) {  TODO: fix this.
+    //     return (<>
+    //         <leaves.CubeWithEdges cube={props.treeStatus.cube} index={30000} />
+    //     </>)
+    // }
+
+    // console.log(`OutlineBoxComponentPlain cube label is `, label)
+    // having weird bug with this. Turned text off. Going to reboot
+    // NEVER ADD A KEY TO A TEXT. IT WILL BE IN THE TEXT.
+
+    const adjustment = 0.25 // lift the text above the floor. 10 cm is a lot but still not working
+    // what the hell. May pull in that far clip plane.
+    return (
+        <>
+            <leaves.CubeWithEdges cube={props.treeStatus.cube} index={props.indexBase}
+             key={props.indexBase} />
+
+            <Text color={plainColorHere} anchorX="center" anchorY="middle"
+                position={[center[0], center[1] - width / 2 + adjustment, center[2]]}
+                rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
+                fontSize={markerSize * 2}>
+                {label}
+            </Text>
+        </>
+    )
+}
+
+// end of OutlineBoxComponentPlain 
+// end of OutlineBoxComponentPlain 
+// end of OutlineBoxComponentPlain 
+// end of OutlineBoxComponentPlain 
+// end of OutlineBoxComponentPlain 
+// end of OutlineBoxComponentPlain 
+
+
+// Draw  ..., to make it easier to see the outline of the cube.
+// what a mess. You should see my room. I'm getting rid of cameraPosition at this low level
+export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
+    const cube = props.treeStatus.cube
     const color = props.color || "royalblue"
 
     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
@@ -44,10 +135,11 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
         corners[i][1] += corners[i][1] - center[1] > 0 ? -markerSize / 2 : markerSize / 2
         corners[i][2] += corners[i][2] - center[2] > 0 ? -markerSize / 2 : markerSize / 2
     }
-    let label = oct.cubeToUrlString(cube)[0].split('-')[1] // just the part after the world name, which is the part that encodes the position and size of the cube.
-    if (props.errorMsg) {
-        label += "\n" + props.errorMsg
-    }
+    let label = oct.CubeToString(cube)[0].split('-')[1] // just the part after the world name, which is the part that encodes the position and size of the cube.
+    // we don't show error messages yet. Stay tuned. Maybe we never will.
+    // if (props.errorMsg) {
+    //     label += "\n" + props.errorMsg
+    // }
     const textColor = props.errorMsg ? "red" : color
 
     let distance = 0
@@ -154,49 +246,50 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
     };
 
 
-    function TwoInchBox() { // for reference.  
-        //  and a 2 meter person.  
-        const size = 2.54 * 2 / 100 // 2 inches in meters so we can see our chain link is wrong.
-        const somez = -5 * 2 ** 4 + 16 + .25
-        return (
-            <>
-                <mesh key={9999} position={[-1 * 2 ** 4, 1, somez]}>
-                    <boxGeometry args={[0.5, 2, 0.5]} />
-                    <meshStandardMaterial color="peachpuff" />
-                </mesh>
-                <mesh key={99992} position={[-1 * 2 ** 4 + .5, 1, somez]}>
-                    <boxGeometry args={[size, size, size]} />
-                    <meshStandardMaterial color="yellow" />
-                </mesh>
-            </>
-        )
-    }
+    // function TwoInchBox() { // for reference.  
+    //     //  and a 2 meter person.  
+    //     const size = 2.54 * 2 / 100 // 2 inches in meters so we can see our chain link is wrong.
+    //     const somez = -5 * 2 ** 4 + 16 + .25
+    //     return (
+    //         <>
+    //             <mesh key={9999} position={[-1 * 2 ** 4, 1, somez]}>
+    //                 <boxGeometry args={[0.5, 2, 0.5]} />
+    //                 <meshStandardMaterial color="peachpuff" />
+    //             </mesh>
+    //             <mesh key={99992} position={[-1 * 2 ** 4 + .5, 1, somez]}>
+    //                 <boxGeometry args={[size, size, size]} />
+    //                 <meshStandardMaterial color="yellow" />
+    //             </mesh>
+    //         </>
+    //     )
+    // }
 
     // only atw liked this one. He's a dork.
-    function cornersAndRisers() {
-        return (
-            <>
-                {corners.map((corner, index) => (
-                    <mesh key={index} position={corner}>
-                        <boxGeometry args={[markerSize * .8, markerSize * .8, markerSize * .8]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-                ))}
+    // function cornersAndRisers() {
+    //     return (
+    //         <>
+    //             {corners.map((corner, index) => (
+    //                 <mesh key={index} position={corner}>
+    //                     <boxGeometry args={[markerSize * .8, markerSize * .8, markerSize * .8]} />
+    //                     <meshStandardMaterial color={color} />
+    //                 </mesh>
+    //             ))}
 
-                {/* //risers */}
-                {corners.map((corner, index) => (
-                    <mesh key={index} position={[corner[0], corner[1] + width / 2 - markerSize * .5, corner[2]]}>
-                        <boxGeometry args={[markerSize * .1, width * .8, markerSize * .1]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-                ))}
+    //             {/* //risers */}
+    //             {corners.map((corner, index) => (
+    //                 <mesh key={index} position={[corner[0], corner[1] + width / 2 - markerSize * .5, corner[2]]}>
+    //                     <boxGeometry args={[markerSize * .1, width * .8, markerSize * .1]} />
+    //                     <meshStandardMaterial color={color} />
+    //                 </mesh>
+    //             ))}
 
-            </>
-        )
-    }
+    //         </>
+    //     )
+    // }
 
     // The <Line> component uses custom shaders to fake geometry. You can pass the following properties to fine-tune its look:lineWidth: Sets the thickness. A value of 5 or 10 creates highly visible, bold lines.worldUnits: Change this boolean to true if you want line thickness to scale realistically with camera distance (measured in 3D scene units instead of screen pixels).
 
+    // should we add this one to the unknown leafes that are close? 
     function ThickCubeEdges() {
 
         let thickness = 2
@@ -252,9 +345,25 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
 
     function IfFarAway() {
 
+        if (props.forceChainLink) {
+            return (
+                <>
+                    <ChainLinkCube />
+                    <ThickCubeEdges />
+                    <TextOnFaces />
+                </>
+            )
+        }
+
+        return (
+            // thin cube edged? no text, no chain link texture, just a simple cube with edges.
+            <CubeWithEdges />
+        )
+        // fixme: 
+
         const somez = -5 * 2 ** 4 + 16 + .25
 
-        console.log("distance to cube distance to cube distance to cube ", distance)
+        console.log("distance to cube", distance)
         if (distance < 30) {
             return (
                 <>
@@ -302,29 +411,27 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
             adjustedPosition[2] + adjustment[2]
         ];
 
-        let aHash = utils.djb2Hash("" + index + oct.cubeToUrlString(props.cube)[0]) // just for fun.
-        // are the integers? eg 2978501148
+        let aHash = utils.djb2Hash("" + index + oct.CubeToString(props.treeStatus.cube)[0]) // an pseudo random 32 bit int. just for fun.
         if ((aHash & (1 << 16)) === 0) {
             aHash = -aHash
         }// now signed.
         aHash = aHash / (2 ** 31) // now just a fract.
+        const rotationZ = aHash * Math.PI / 16; // 
+        // console.log("textRotation ", rotationZ)
 
-        //  aHash = aHash % (Math.PI / 12)
-        // // make it into +- 20 degrees , in radians.
-        // const randomAngle = (aHash % 40 - 20) * (Math.PI / 180)
-        const rotationZ = aHash * Math.PI / 6; // 15 degrees clockwise
-      //   let textRotation: [number, number, number,string] = [rotationZ, 0, 0, 'ZYX']
 
-        console.log("textRotation ", rotationZ)
+        //     console.log(`OutlineBoxComponent not pppp Plain cube MESSAGE is `, label)
+        // NEVER ADD A KEY TO A TEXT. IT WILL BE IN THE TEXT
 
         return (
-            <>
+            <React.Fragment key={index}>
                 <mesh key={index} position={adjustedPosition} rotation={rotation}>
 
                     {/* The White Square */}
                     <mesh
                         // position={adjustedPosition}
-                        rotation-z={rotationZ}  
+                        rotation-z={rotationZ}
+                        key={index + 10000}
                     >
                         <planeGeometry args={[3, 0.25]} />
                         <meshStandardMaterial
@@ -334,17 +441,20 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
                         />
                     </mesh>
 
-                    <Text color={"black"} anchorX="center" anchorY="middle"
+                    <Text  color={"black"} anchorX="center" anchorY="middle"
                         position={[0, 0.0, 0.02]} // Slightly in front of the plane to avoid z-fighting}
                         // rotation={textRotation}
-                          rotation-z={rotationZ}  
+                        rotation-z={rotationZ}
                         fontSize={.15}>
                         {message}
                     </Text>
                 </mesh>
-            </>
+            </React.Fragment>
         )
     }
+
+
+
 
     function TextOnFaces() { // this is crap
         const offset = width / 2 * 0.98
@@ -375,6 +485,8 @@ export function OutlineBoxComponent(props: { cube: oct.Cube, errorMsg: string | 
             </>
         )
     }
+
+    // console.log(`OutlineBoxComponent not plain something is `, label)
 
     return (
         <>

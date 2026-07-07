@@ -7,8 +7,9 @@ import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
 import * as atwdns from '../knotfree-ts-lib/3d/DnsTypes'
 import * as namesapi from '../knotfree-ts-lib/3d/NamesApi'
 
-
 import assert from 'node:assert/strict';
+
+// test some atwdns stuff 
 
 // command to execute. in a javascript debug terminal: npx ts-node src/scripts/testingTrees.ts
 
@@ -23,7 +24,7 @@ async function doTheScript() {
             { world: "testmain", x: 0, y: 0, z: 0, p: 12, whichParent: 0 }, // is in xyz but not vr in cloudflare. I registered it there to test.
             { world: "testmain", x: 0, y: 0, z: 0, p: 6, whichParent: 0 },  // is in neither
         ]
-        console.log("12th level cube name:", oct.cubeToUrlString(rawChain[1]))
+        console.log("12th level cube name:", oct.CubeToString(rawChain[1]))
 
         const [twlm, err] = await octload.TwoWayLookupAndMerge(rawChain)
 
@@ -90,3 +91,19 @@ function setTimer() {
         }
     }, 100)
 }
+
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

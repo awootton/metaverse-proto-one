@@ -24,6 +24,7 @@ import * as atwdns from './DnsTypes'
 export type LookupNameExistsReturnType = {
 	Exists: boolean
 	Online: boolean
+    Owner: string
 }
 
 let server = "https://knotfree.net"
@@ -31,7 +32,7 @@ let server = "https://knotfree.net"
 server = atwdns.knotfreeServer
 
 // sends a command to the knotfree.io API, which will execute it on the server. 
-export async function sendNameserviceCommand(command: string, domainName: string, keyPair: { pubk: string, priv: string }): Promise<string> {
+export async function sendNameserviceCommand(command: string, domainName: string, keyPair: { pubk: string, priv: string }): Promise<[string,Error|null]> {
     let nonce = utils.randomString(24)
     // console.log('reserve new nonce', nonce)
 
@@ -40,7 +41,7 @@ export async function sendNameserviceCommand(command: string, domainName: string
     const tmp = await response.text();
     if (!response.ok) {
         console.error('Failed to fetch public key:', response.statusText);
-        return "FAILED - could not fetch public key";
+        return ["", new Error('Failed to fetch public key')];
     }
     const theirPubk = tmp || "FAILED -muxcABH_pTsuNqT3yaYfQj-3krwM6XmEu47vTZLSHM"
     // console.log("theirPubk", theirPubk)
@@ -79,5 +80,43 @@ export async function sendNameserviceCommand(command: string, domainName: string
     // console.log('result', result)
     // console.log()
 
-    return result
+    return [result, null]
 }
+
+export async function sendNameserviceCommandHarder(command: string, domainName: string, keyPair: { pubk: string, priv: string }): Promise<[string,Error|null]> {
+
+    let counter = 0
+    while (true) {
+        let result: string
+        let err: Error | null
+        [result, err] = await sendNameserviceCommand(command, domainName, keyPair)
+        if (err) {
+            console.error("sendNameserviceCommandHarder Error:", err, counter)
+            // wait a bit and try again
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            counter++
+            if (counter >= 5) {
+                return ["", new Error("Failed to send nameservice command after 5 attempts: " + err.message)]
+            }
+        }
+        else {
+            return [result, null]
+        }
+    }
+
+}
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-import './Canvas.css'
+// import './Canvas.css'
 
 export type Props = {
 

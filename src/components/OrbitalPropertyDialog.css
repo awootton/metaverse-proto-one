@@ -1,0 +1,9 @@
+
+p {
+  margin: 2px 0;
+  /* how do I make this crap work? I'm putting the styles right in the p tags. */
+}
+
+p#skinnyp {
+  margin: 2px 0;
+}

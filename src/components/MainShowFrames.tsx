@@ -1,6 +1,6 @@
 import React from 'react'
 
-import * as pubsub from './PubSubSession'
+import * as pubsub from './PubSubSimple'
 import * as  iutil from './IFrameUtils'
 import { useFrame,useThree } from '@react-three/fiber'
 // import { useFBO } from '@react-three/drei'
@@ -121,3 +121,18 @@ export const ShowFrameList: React.FC = () => {
          
     )
 }
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

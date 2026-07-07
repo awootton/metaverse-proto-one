@@ -1,14 +1,71 @@
 import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 
 
+// also test FromXToY
+
 // npx ts-node src/scripts/showMeTheParents.ts
+
+
+{
+    let [result, err] = oct.FromXToY("from testmain-3n0u3e3p to testmain-3n0u3w3p")
+    if (err) {
+        console.error("Error: ", err)
+    } else {
+        console.log("Result: ", result)
+    }
+    let wantedResult = "testmain-3n0u3e3p,testmain-3n0u2e3p,testmain-3n0u1e3p,testmain-3n0u0e3p,testmain-3n0u1w3p,testmain-3n0u2w3p,testmain-3n0u3w3p"
+    if (result !== wantedResult) {
+        console.error(`Test failed. Expected: ${wantedResult}, got: ${result}`)
+    } else {
+        console.log("Test passed.")
+    }
+}
+{
+    // try the reverse direction too.
+    let [result, err] = oct.FromXToY("from testmain-3n0u3w3p to testmain-3n0u3e3p")
+    if (err) {
+        console.error("Error: ", err)
+    } else {
+        console.log("Result: ", result)
+    }
+    // it's the same result but reversed, because we are going from the same cube to the same cube, just in reverse order. So we should get the same cubes but in reverse order.
+    let wantedResult = "testmain-3n0u3w3p,testmain-3n0u2w3p,testmain-3n0u1w3p,testmain-3n0u0e3p,testmain-3n0u1e3p,testmain-3n0u2e3p,testmain-3n0u3e3p"
+    if (result !== wantedResult) {
+        console.error(`Test failed. Expected: ${wantedResult}, got: ${result}`)
+    } else {
+        console.log("Test passed.")
+    }
+}
+
+{
+    // generate a 4x4 square.
+    let [result, err] = oct.FromXToY("from testmain-2s0u2w3p to testmain-1n0u1e3p")
+    if (err) {
+        console.error("Error: ", err)
+    } else {
+        console.log("Result: ", result)
+    }
+    // is it 16? 
+    if (result.split(",").length !== 16) {
+        console.error(`Test failed. Expected 16 cubes, got: ${result.split(",").length}`)
+    }
+    let wantedResult =    "testmain-2s0u2w3p,testmain-1s0u2w3p,testmain-0n0u2w3p,testmain-1n0u2w3p,testmain-2s0u1w3p,testmain-1s0u1w3p,testmain-0n0u1w3p,testmain-1n0u1w3p,testmain-2s0u0e3p,testmain-1s0u0e3p,testmain-0n0u0e3p,testmain-1n0u0e3p,testmain-2s0u1e3p,testmain-1s0u1e3p,testmain-0n0u1e3p,testmain-1n0u1e3p"
+    let oldwantedResult = "testmain-2s0u2w3p,testmain-2s0u1w3p,testmain-2s0u0e3p,testmain-2s0u1e3p,testmain-1s0u2w3p,testmain-1s0u1w3p,testmain-1s0u0e3p,testmain-1s0u1e3p,testmain-0n0u2w3p,testmain-0n0u1w3p,testmain-0n0u0e3p,testmain-0n0u1e3p,testmain-1n0u2w3p,testmain-1n0u1w3p,testmain-1n0u0e3p,testmain-1n0u1e3p"
+    // it's the same but the order changed.
+    if (result !== wantedResult) {
+        console.error(`Test failed. Expected: ${wantedResult}, got: ${result}`)
+    } else {
+        console.log("Test passed.")
+    }
+}
+
 
 function showMeTheParents(cube: oct.Cube) {
     while (true) {
-        const [parent, octtreeIndex] = oct.getParentCubeWithOcttreeIndex(cube)
+        const [parent, octtreeIndex] = oct.GetParentCubeWithOcttreeIndex(cube)
         parent.whichParent = octtreeIndex
         // console.log("parents: ", parent, "octtreeIndex: ", octtreeIndex, "name: ", oct.cubeToUrlString(parent)[0])
-        console.log("parents: ",   "octtreeIndex: ", octtreeIndex, "name: ", oct.cubeToUrlString(parent)[0])
+        console.log("parents: ", "octtreeIndex: ", octtreeIndex, "name: ", oct.CubeToString(parent)[0])
 
         if (parent.p == 16) {
             break
@@ -18,25 +75,25 @@ function showMeTheParents(cube: oct.Cube) {
 }
 
 let property = "testmain-0n0u0e5p"
-let cube: oct.Cube = oct.stringToCube(property)[0]
+let cube: oct.Cube = oct.StringToCube(property)[0]
 console.log("cube: ", cube)
 showMeTheParents(cube)
 
 // These are the 8 32 meter cubes around the origin.
 // who are their top level parents? I want to show the whole path up to the top.
 const names = [
-  'testmain-0n0u0e5p',
-  'testmain-1s0u0e5p',
-  'testmain-0n1d0e5p',
-  'testmain-1s1d0e5p',
-  'testmain-0n0u1w5p',
-  'testmain-1s0u1w5p',
-  'testmain-0n1d1w5p',
-  'testmain-1s1d1w5p'
+    'testmain-0n0u0e5p',
+    'testmain-1s0u0e5p',
+    'testmain-0n1d0e5p',
+    'testmain-1s1d0e5p',
+    'testmain-0n0u1w5p',
+    'testmain-1s0u1w5p',
+    'testmain-0n1d1w5p',
+    'testmain-1s1d1w5p'
 ]
 
 for (const name of names) {
-    let cube: oct.Cube = oct.stringToCube(name)[0]
+    let cube: oct.Cube = oct.StringToCube(name)[0]
     console.log("cube: ", cube)
     showMeTheParents(cube)
 }
@@ -139,3 +196,18 @@ parents:  octtreeIndex:  7 name:  testmain-1s1d1w14p-7
 parents:  octtreeIndex:  7 name:  testmain-1s1d1w15p-7
 parents:  octtreeIndex:  7 name:  testmain-1s1d1w16p-7
 */
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
