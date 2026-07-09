@@ -88,175 +88,20 @@ for (const cube of knownCubesList) {
 
 // You probably wonder if I leave scrap material lying around in my shop. Why, yes Virginia I do. 
 // I clean it up later.
-// type octTreeNodeChildType = octTreeNode | null
 
-// type octTreeNode = {
-//     cube: oct.Cube;
-//     occupied: boolean;
-//     children: (octTreeNodeChildType)[];
-// }
 
-// export const specialCheckingModeError: Error = new Error(`Este espacio ya está ocupado`)
 
-// export class OctTreeIntersector {
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-//     root: octTreeNode[] = new Array(8).fill(null)
-//     inCheckingMode: boolean = false
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-//     constructor() {
-//         // we should fill the root.
-//         // it SPANS THE ORIGIN at level 16.
-//         // my little friend helping types fast but is not clever.
-//         const from = "testmain-1s1d1w16p" // this is way more fun.
-//         const to = "testmain-0n0u0e16p"
-//         const [rootCubeStrings, err] = oct.FromXToYString(from, to)
-//         const [rootCubeArray, err2] = oct.ParseCubeList(rootCubeStrings)
-//         // console.log("OctTreeIntersector rootCubeStrings: ", rootCubeStrings)
-//         this.root = rootCubeArray.map(cube => {
-//             return {
-//                 occupied: false,
-//                 cube: cube,
-//                 children: new Array(8).fill(null)
-//             }
-//         })
-//         // note that it starts with cube: { world: 'testmain', x: -65536, y: -65536, z: -65536, p: 16 }
-//         // and 0,0,0 is at index 7.
-//         // console.log("OctTreeIntersector initialized with root: ", this.root)
-//     }
-
-//     // The three checking mode conditions are:
-//     // 1. We just find a cube that is already occupied. We don't care about the rest of the tree. theNotNullNode.occupied && this.inCheckingMode
-//     // 2. We try to leave the known tree. Never make new children in checking mode. If we are checking, then we are just looking for intersections. If there is no child node, then there is no intersection.
-//     // 3. We get to a node, with children, that matches. The existance of the children means there's an intersection. 
-
-//     recurse(node: octTreeNodeChildType, cube: oct.Cube, depth: number): (Error | null) {
-
-//         if (depth > 64) {
-//             // Loath a throw. Loath All Throws. throw new Error(`Depth exceeded while trying to add cube ${cube.world}-${cube.x}n${cube.y}u${cube.z}e${cube.p}p to octree. This should never happen.`) 
-//             // ask Robert Griesemer to explain. 
-//             console.error(`Depth exceeded while trying to add cube ${cube.world}-${cube.x}n${cube.y}u${cube.z}e${cube.p}p to octree. This should never happen.`)
-//             // ironically, in isCheckingMode ...
-//             if (this.inCheckingMode) {
-//                 return specialCheckingModeError
-//             }
-//             return new Error(`Depth exceeded while trying to add cube ${cube.world}-${cube.x}n${cube.y}u${cube.z}e${cube.p}p to octree. This should never happen.`)
-//         }
-//         const theNotNullNode = node as octTreeNode
-//         if (theNotNullNode.occupied && this.inCheckingMode) {
-//             return specialCheckingModeError // obviously
-//         }
-//         const isSameCube = oct.IsSameCube(theNotNullNode.cube, cube)
-//         if (isSameCube) {
-//             if (this.inCheckingMode) {
-//                 // what if it matches but is not occupied?
-//                 // Then there would be a child in it's slot. 
-//                 // if (theNotNullNode.occupied) {
-//                 //     return specialCheckingModeError
-//                 // }
-//                 // return specialCheckingModeError
-//                 // more checking coming up.
-//             } else {
-//                 theNotNullNode.occupied = true
-//                 return null// and, we're done.
-//             }
-//         }
-//         // well, ok, which child is it?
-//         const halfSize = 2 ** (theNotNullNode.cube.p - 1)
-//         const nodePower = 2 ** (theNotNullNode.cube.p)
-//         const cubePower = 2 ** (cube.p)
-
-//         let index = 0
-//         if (cube.x >= theNotNullNode.cube.x + halfSize) {
-//             index += 1
-//         }
-//         if (cube.y >= theNotNullNode.cube.y + halfSize) {
-//             index += 2
-//         }
-//         if (cube.z >= theNotNullNode.cube.z + halfSize) {
-//             index += 4
-//         }
-//         let childNode = theNotNullNode.children[index]
-//         if (childNode === null) { // make a new one. A smaller one. 
-//             // never make new children in checking mode. If we are checking, then we are just looking for intersections. If there is no child node, then there is no intersection.
-//             if (this.inCheckingMode) {
-//                 return null // no intersection, because there is no child node. we're done.
-//             }
-//             const subCube = oct.GetChildCube(theNotNullNode.cube, index)
-//             childNode = {
-//                 cube: subCube,
-//                 occupied: false,
-//                 children: new Array(8).fill(null)
-//             }
-//             theNotNullNode.children[index] = childNode
-//         }
-//         if (this.inCheckingMode && isSameCube) {
-//             if (childNode !== null) {
-//                 return specialCheckingModeError
-//             }
-//         }
-//         // console.log("is", (childNode as octTreeNode).cube, "closer to", cube, "?")
-//         // and, you know, recurse.
-//         return this.recurse(childNode, cube, depth + 1)
-//     }
-
-//     AddKnownCube(cube: oct.Cube): (Error | null) {
-//         // we assume that the coordintes are += 64k. Check that?
-//         // we want to add this cube to the octree. We need to find the correct place for it in the tree and then add it there. 
-//         // we can do this by starting at the root and then going down the tree until we find the correct place for it. duh, thanks copilot.
-//         let index = 0
-//         if (cube.x >= 0) {
-//             index += 1
-//         }
-//         if (cube.y >= 0) {
-//             index += 2
-//         }
-//         if (cube.z >= 0) {
-//             index += 4
-//         }
-//         // console.log("Adding cube: ", cube, " to octree at index: ", index)
-//         const node = this.root[index]
-//         if (node === null) {
-//             // this can never happen. the root is always filled with nodes that span the origin.
-//             return new Error(`No node at root for index ${index} for cube ${cube.world}-${cube.x}n${cube.y}u${cube.z}e${cube.p}p`)
-//         }
-//         // if there is no node at this index, then we can just add the cube here.
-//         const err = this.recurse(node, cube, 0)
-//         return err
-//     }
-
-//     CheckForIntersection(cube: oct.Cube): [boolean, Error | null] {
-//         // I don't want to write another traversal. Just hack the one we have.
-//         this.inCheckingMode = true
-//         const err = this.AddKnownCube(cube)
-//         this.inCheckingMode = false
-//         const wasIntersecting = err === specialCheckingModeError
-//         if (wasIntersecting === false) {
-//             // did something weird happen? 
-//             return [wasIntersecting, err]
-//         }
-//         return [wasIntersecting, null]
-//     }
-
-//     PrintTheTree() { // my angel wrote this for me. I am a monster. I am a genius. I am a monster genius.
-//         // I have a dream and in the morning there's code. 
-//         const printNode = (node: octTreeNodeChildType, index: number, depth: number) => {
-//             if (node === null) {
-//                 return
-//             }
-//             const theNotNullNode = node as octTreeNode
-//             const cube = oct.CubeToUrlString(theNotNullNode.cube)[0]
-//             console.log(`${' '.repeat(depth * 2)}- ${index}- ${cube} ${theNotNullNode.occupied ? '(occupied)' : ''}`)
-//             let i = 0
-//             for (const child of theNotNullNode.children) {
-//                 printNode(child, i, depth + 1)
-//                 i++
-//             }
-//         }
-//         console.log("Loaded intersector dump:")
-//         let index = 0
-//         for (const node of this.root) {
-//             printNode(node, index, 0)
-//             index++
-//         }
-//     }
-// }
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

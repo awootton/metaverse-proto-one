@@ -68,10 +68,21 @@ export type MainWorldDisplayProps = {
 // It will also subscribe to changes in the demo spaces and update the cubes to render accordingly.
 // There's two of these when the OrbitPropertyDialog is open. So, tree traversal is BROKEN. 
 
+// which one is the only show address one. It needs a key stroke to toggle it. The other one is just a display of the world.
+// it's onlyShowOutlineBoxes it comes in with the WorldDisplayState
+// 
+
 export function MainWorldDisplay(props: MainWorldDisplayProps) {
 
-  console.log("MainWorldDisplay starting with  ", props.state.uniqueId, " show Props as outlines", props.state.onlyShowOutlineBoxes)
+  // Show the demo spaces, or prospective properties, as outlines with their addresses.
+  // we subscribe to this. The value doesn't matter.
   const [demoSpacesVersion, setDemoSpacesVersion] = React.useState("")
+
+  // Don't show the normal content. Show boxes without outlines instead. comes on on the props. 
+  // We're going to have to publish for this one.
+  //cconst [onlyShowOutlineBoxes, setOnlyShowOutlineBoxes] = React.useState(props.state.onlyShowOutlineBoxes)
+
+  console.log("MainWorldDisplay id=", props.state.uniqueId, " show demos=", demoSpacesVersion, " onlyShowOutlineBoxes=", props.state.onlyShowOutlineBoxes, " showOriginAxis=", props.state.showOriginAxis)
 
   React.useEffect(() => {
     console.log("MainWorldDisplay DemoPropertiesChanges" + props.state.uniqueId)
@@ -87,6 +98,32 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
       console.log(`MainWorldDisplay${props.state.uniqueId} useEffect DemoPropertiesChanges cleanup`)
     }
   }, [demoSpacesVersion]);
+
+  // I thought the key listener would be released so I put it here. But it doesn't get released. 
+
+  React.useEffect(() => {
+    const myHandleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case '=': {
+          if (e.ctrlKey && e.shiftKey) {
+            console.log("ctrl shift equals key pressed");
+            // but, the state has a toggle for this.
+            props.state.toggleOnlyShowOutlineBoxes()
+          }
+        }
+          break;
+      }
+    };
+    // We STILL need to unhook this addEventListener ?? 
+    window.addEventListener('keydown', myHandleKeyDown);
+    console.log("NavigationCamera installation: added keydown listener");
+
+    return () => {
+      // how do we make THIS happen so that the dialog will work? Just don't make the main canvas!!! 
+      console.log("NavigationCamera cleanup: removing keydown listener");
+      window.removeEventListener('keydown', myHandleKeyDown);
+    }
+  }, []);
 
   // these would get flushed with every re-render, which would be bad. We need them to persist. So we put them in the state.What state?
   // previousCameraPosition: new THREE.Vector3(1e999, 0, 0),
@@ -154,13 +191,11 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
 
     <MakeBoxesForDemoSpaces worldDisplayState={props.state} demoCubeList={demoCubes} indexBase={1000 * 1000} />
 
-    <MakeBoxesForShowingLeaves {...props} indexBase={props.indexBase} />
+    <MakeBoxesForShowingLeaves {...props} state={{ ...props.state }} indexBase={props.indexBase} />
 
   </>)
 
 }
-
-
 
 // we'll use the names, sorted, so it can tell when it changes.
 // no state for this. We pass it in to tigger.
@@ -234,6 +269,8 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
 // if (ourState.current.uniqueId !== uniqueId) {
 //   console.log("MainWorldDisplay uniqueId mismatch ", ourState.current.uniqueId, " to ", uniqueId)
 // }
+
+
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE

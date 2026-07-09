@@ -4,6 +4,9 @@ export { };
 
 import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 
+
+// Very basic tests of the StringToCube and CubeToString functions and associated utilities.
+
 // command to execute: npx ts-node src/scripts/testStringToCube.ts
 
 // you SUCK import { expect, test } from 'vitest' one more node link error and I'll scream

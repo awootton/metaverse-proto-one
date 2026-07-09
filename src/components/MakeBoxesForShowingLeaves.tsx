@@ -129,7 +129,7 @@ export default function MakeBoxesForShowingLeaves(props: MainWorldDisplayProps) 
             group2LeafListMap.set(key, batchInfo) // put it back in the map. cloned. Does that matter? 
             // is it wriecking the iteretor? 
         }
-        // console.log("MakeBoxesForShowingLeaves: group2LeafListMap key: ", key, " value: ", batchInfo)
+        console.log("MakeBoxesForShowingLeaves: group2LeafListMap key: ", key, " value: ", batchInfo)
     }
 
     // now traverse the groups and send them to batch renderers.

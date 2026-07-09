@@ -325,7 +325,7 @@ runTraversalTasks(); // Start the async loop to process tasks
 
 async function localTraverseTheTree(worldName: string, position: THREE.Vector3, state: WorldDisplayState) {
 
-    console.log("TraverseTheTree called. TraverseTheTree called. TraverseTheTree called. Traversing the tree and updating cubes to render. position: ", position, "worldName: ", worldName)
+    // console.log("TraverseTheTree called. TraverseTheTree called. TraverseTheTree called. Traversing the tree and updating cubes to render. position: ", position, "worldName: ", worldName)
 
     // is it worth detecting that the leaf list is the same?
     // let's try it. 
@@ -344,7 +344,7 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3, 
     err = await errPromise
     const endTime = Date.now()
 
-    console.log("Time taken for TraverseTheTree: Time taken for TraverseTheTree: Time taken for TraverseTheTree: ", endTime - startTime, "ms leaves found", state.theGlobalTree.showingLeaves.size)
+    console.log("Time taken for TraverseTheTree: ", endTime - startTime, "ms. Leaves found=", state.theGlobalTree.showingLeaves.size)
     // after the first one it's saying 0 ms. Which is correct. It's actually about 0.1
 
     if (err != null) {
@@ -382,4 +382,19 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3, 
         // we must also inform the keeper of the Iframes. eeewww
     }
 }
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 

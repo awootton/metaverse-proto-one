@@ -529,7 +529,8 @@ export function ThingWithGlb(props: LeafRenderingComponentProps) {
             </>
         );
     } catch (e) {
-        // should we announce this? console.error("Failed to load GLB:", glbUrl, e)
+        // should we announce this? 
+        console.log("Failed to load GLB:", glbUrl, e)
         // we should have a version of this with a big "error" sign posted at eye level. TODO:
         // I'm getting this with a glbUrl that works, and will eventually load.
         // what do I do in the meantime? 

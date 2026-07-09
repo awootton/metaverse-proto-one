@@ -301,6 +301,22 @@ export async function TwoWayLookupAndMerge(rawChain: oct.Cube[]): Promise<[oct.T
 }
 
 
+// We have an expired ChildBitsCacheEntry. Calculate a new value for it.
+// Come on CP. I dare you. (I threw away the junk he wrote.)
+// Wow. It's not right. It needs to call 
+// async function calcChildrenBitsForName(name: string): Promise<[number, Error | null]> {
+
+//         if (tree.childrenBits === -1) {
+//             const [childBits, err] = await calcChildrenBits(tree.cube, tree.name, tree.childrenBits);
+//             tree.childrenBits = childBits;
+//             if (err) {
+//                 console.error("bvts Error calculating children bits for tree ", tree.name, err)
+//                 return err
+//             }
+//         }
+
+
+
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE
 // This program is free software: you can redistribute it and/or modify

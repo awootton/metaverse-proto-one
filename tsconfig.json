@@ -1,6 +1,6 @@
 {
     "include": [
-        "./src/**/*" 
+        "./src/**/*", "declarations.d.ts"
     ],
     "compilerOptions": {
         // I hate node link errors. it's ruining my life.

@@ -45,14 +45,22 @@ export class MyLocalStorage {
     }
 }
 
+// Note that the node version of localStorage is not persistent, so it will not retain data between runs of your application.
+// 
 export const ourLocalStorage = (typeof window !== "undefined" && window !== null) ? window.localStorage : new MyLocalStorage()
  
-// to define some LocalStorage in nodejs but don't mess up the browser's localStorage.
-// do I need to do somethig like this? and include this file?
 
-// import * as NodeLocalStorage from 'node-localstorage'
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
 
-// // this is pretty cool. Thanks CP. Will it work? 
-// export const ourLocalStorage = (typeof window !== "undefined" && window !== null) ? window.localStorage : new NodeLocalStorage.LocalStorage('./scratch')
-
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

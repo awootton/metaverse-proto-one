@@ -8,13 +8,17 @@ import { Perf } from 'r3f-perf'
 import { MenuItem, DropdownMenu } from "./components/MainMenu"
 
 import * as  nav1 from './components/NavigatorTest1'
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { StarsDialog } from './knotfree-ts-lib/components/StarsDialog'
 
 import MarkdownDialog from './components/MarkdownDialog'
 import { MainWorldDisplay } from './components/MainWorldDisplay'
 import { WorldDisplayState } from './components/WorldDisplayState'
 import Switch from '@mui/material/Switch'
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import Close from '@mui/icons-material/Close';
+
 import { OrbitPropertyDialog } from './components/OrbitPropertyDialog'
 
 import * as bvts from './knotfree-ts-lib/3d/BuildVisibleTreeStatus';
@@ -26,7 +30,7 @@ import * as pubsub from "./components/PubSubTopicAndSubscribers"
 import { MyInputDialog } from './knotfree-ts-lib/components/MyInputDialog'
 import { StartLoadFromDbAndRun } from './components/AppCanvas'
 import AppCanvas from './components/AppCanvas'
-
+import AboutGotohereDialog from './components/AboutGotohereDialog'
 
 const doClear = new URLSearchParams(window.location.search).get("clear")
 // I just changed some definitions so lets start fresh.
@@ -55,7 +59,7 @@ if (locparam) {
   }
 }
 
-const startingAppDisplayState: WorldDisplayState = {
+const InitialGlobalAppDisplayState: WorldDisplayState = {
   worldName: startingCube.world,
   previousCameraPosition: new THREE.Vector3(-2, 1.75, 10),
   currentCameraPosition: new THREE.Vector3(-2, 1.75, 12),
@@ -64,14 +68,21 @@ const startingAppDisplayState: WorldDisplayState = {
   theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
   uniqueId: utils.randomString(24),
   onlyShowOutlineBoxes: false,
-  showOriginAxis: true
+  showOriginAxis: true,
+  toggleOnlyShowOutlineBoxes: () => {
+    console.log("App OnlyShowOutlineBoxes toggle needs override. " +
+      "This is a placeholder. It should be overridden by the parent component.")
+  }
 }
 
 // it's async but I'm not waiting.
-StartLoadFromDbAndRun(startingAppDisplayState)
+StartLoadFromDbAndRun(InitialGlobalAppDisplayState)
 
 console.log("App url ", window.location.href)
 
+// The problem is that NewestAppToggleOnlyShowOutlineBoxes and the state change every time.
+// We must call the latest.
+var LatestAppToggleOnlyShowOutlineBoxes: (state: WorldDisplayState) => void = () => {}
 
 export default function App() {
 
@@ -83,9 +94,27 @@ export default function App() {
   // console.log("App starting with localStorage cache size  ", localStorage.length)
   // console.log("App starting with localStorage child bits cache loadout of   ", oct.GetTheWholeChildBitsLocalCache().size, " items.")
 
-  // this is a problem because it has onlyShowOutlineBoxes in it and also in another state.
-  //  we have to set them twice. FIXME: 
+  //because we can reference a function before it's defined
+  const startingAppDisplayState: WorldDisplayState = {
+    ...InitialGlobalAppDisplayState,
+    onlyShowOutlineBoxes: false,
+    toggleOnlyShowOutlineBoxes: () => { LatestAppToggleOnlyShowOutlineBoxes(startingAppDisplayState) }
+  }
+
   const [appDisplayState, setAppDisplayState] = useState(startingAppDisplayState);
+
+  function NewestAppToggleOnlyShowOutlineBoxes() {
+    // there's no storage for this one. Imagine the confusion that could result
+    let showThem = !appDisplayState.onlyShowOutlineBoxes;
+    console.log("App OnlyShowOutlineBoxes is now ", showThem)
+    const newState = {
+      ...appDisplayState,
+      onlyShowOutlineBoxes: showThem,
+    }
+    setAppDisplayState(newState)
+  }
+  // really a useEffect thing. No?
+  LatestAppToggleOnlyShowOutlineBoxes = NewestAppToggleOnlyShowOutlineBoxes
 
   // console.log("App Starting with  ", appDisplayState.uniqueId)
 
@@ -100,11 +129,6 @@ export default function App() {
 
   // we have to set this twice. FIXME: 
   const [showAxisAtOrigin, setShowAxisAtOrigin] = useState(axisWillShow);
-
-  //  don't save this one in storage. It's evil. 
-  //  onlyShowOutlineBoxes means show outlines and addresses of owned properties, not their contents. It's a demo mode for the app.
-  //  we have to set them twice. FIXME:   
-  const [onlyShowOutlineBoxes, setOnlyShowOutlineBoxes] = useState(false);
 
   const [showingLeaves, setShowingLeaves] = useState([] as oct.TreeStatus[])
 
@@ -178,7 +202,7 @@ export default function App() {
 
   var shouldShowMainWorldDisplay = true
   var shouldShowOrbitalCanvasDisplay = false
-  if (orbit ) { // || helpClicked || stars) {
+  if (orbit) { // || helpClicked || stars) {
     shouldShowMainWorldDisplay = false
     // for now, we don't want to show the main world display when we're in orbital view, 
     // because the orbital view is meant to be a separate thing. 
@@ -189,9 +213,15 @@ export default function App() {
     shouldShowOrbitalCanvasDisplay = true
   }
 
+  //  was <DropdownMenu triggerLabel={(<div><MoreHorizIcon /></div>)} items={MainMenuActions} />
+  // want MenuOpenIcon because Wendy didn't see it.
+
+  // <CloseIcon />
+
+  //  <DropdownMenu triggerLabel={(<div><MenuOpenIcon/></div>)} items={MainMenuActions} />
+
 
   // console.log("App refresh  refresh  refresh  refresh  worldName ", worldName, "hideHelpOnStartState ", hideHelpOnStartState)
-
   return (
     <>
       {/* top bar */}
@@ -199,8 +229,7 @@ export default function App() {
         <div>github.com/awootton/metaverse-proto-one </div>
         <div><a href="https://x.com/alan_t_wootton" target="_blank" rel="noopener noreferrer">X blog</a> </div>
         <div>Build Date: {preval`module.exports = new Date().toLocaleString();`}.</div>
-        {/* <MoreHorizIcon onClick={() => setHelpClicked(true)} /> */}
-        <DropdownMenu triggerLabel={(<div><MoreHorizIcon /></div>)} items={MainMenuActions} />
+        <DropdownMenu triggerLabel={(<div><MenuOpenIcon /></div>)} items={MainMenuActions} />
         {/* <StarPurple500Icon onClick={() => { setStars(true) }}  /> */}
         <div>{loadingMessage}.</div>
       </span>
@@ -209,7 +238,7 @@ export default function App() {
         state={{
           ...appDisplayState,
           showOriginAxis: showAxisAtOrigin, // the SetState here
-          onlyShowOutlineBoxes: onlyShowOutlineBoxes,
+          toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
         }} // pass the state down to the AppCanvas
         //  previousCameraPosition={defaultCameraPosition}
         //  timeSinceLastCameraMovement={0}
@@ -218,13 +247,22 @@ export default function App() {
         showingLeaves={showingLeaves}
       />
 
-      <MarkdownDialog
+      {/* <MarkdownDialog
+        open={helpClicked}
+        onClose={() => setHelpClicked(false)}
+        title={"Hi"}
+        body={helpText}
+        inject={(<><Switch checked={!hideHelpOnStartState} size="small" onClick={() => toggleHideHelpOnStart()} />Hide Help on Start</>)}
+      /> */}
+
+      <AboutGotohereDialog
         open={helpClicked}
         onClose={() => setHelpClicked(false)}
         title={"Hi"}
         body={helpText}
         inject={(<><Switch checked={!hideHelpOnStartState} size="small" onClick={() => toggleHideHelpOnStart()} />Hide Help on Start</>)}
       />
+
       <StarsDialog
         open={stars}
         onClose={() => { setStars(false) }} //
@@ -240,7 +278,7 @@ export default function App() {
         worldDisplayState={{
           ...appDisplayState,
           showOriginAxis: showAxisAtOrigin, // the SetState here
-          onlyShowOutlineBoxes: onlyShowOutlineBoxes,
+          toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
         }}
         shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
 
@@ -274,7 +312,8 @@ export default function App() {
               <Switch checked={showAxisAtOrigin} size="small" onClick={() => toggleShowAxisAtOrigin()} />Show the axis at the origin
             </div>
             <div>
-              <Switch checked={onlyShowOutlineBoxes} size="small" onClick={() => toggleOnlyShowOutlineBoxes()} />Show owned properties as blue cubes. See their addresses.
+              <Switch checked={appDisplayState.onlyShowOutlineBoxes} size="small" 
+              onClick={() => appDisplayState.toggleOnlyShowOutlineBoxes()} />Show owned properties as blue cubes. See their addresses.
             </div>
           </>
         )}
@@ -295,17 +334,6 @@ export default function App() {
     console.log("App toggleHideHelpOnStart ", hideHelpOnStart, hideHelpOnStartState)
   }
 
-  function toggleOnlyShowOutlineBoxes() {
-    // there's no storage for this one. Imagine the confusion that could result
-    let showThem = !onlyShowOutlineBoxes;
-    console.log("App OnlyShowOutlineBoxes is now ", showThem)
-    setOnlyShowOutlineBoxes(showThem);
-    const newState = {
-      ...appDisplayState,
-      onlyShowOutlineBoxes: showThem,
-    }
-    setAppDisplayState(newState)
-  }
 
   // the logic is reversed. If it's null then we show the axis on start. If it's set then we don't show it.
   function toggleShowAxisAtOrigin() {
@@ -349,9 +377,13 @@ I don't care. I just want to see it happen and I love you to the moon and back.
 
 `
 
+// https://x.com/alan_t_wootton/status/2074578390208983408?s=20 
+
 const helpText = `
 ## How to buy property in The Metaverse. Just buy a domain name of the right format.
 #### Like, for real. There’s a new demo release. Today! 
+
+[See the latest content at X.com.](https://x.com/alan_t_wootton/status/2074578390208983408?s=20 )
 
 http://gotohere.com is this demo.
 
@@ -362,7 +394,7 @@ How other things, cars, avatars, and other things can interact with property and
 
 As I describe the technique I'll provide working code and a working demo. It's what I do. And then, There will be ... The Metaverse.
 
-Follow me. @alan_t_wootton on X. I'm blogging about it there. I don't have time for friviolous social media. I have a lot of work to do.
+Follow me. @alan_t_wootton on X. I'm blogging about it there. I don't have time for much social media. I have a lot of work to do.
 
 `
 

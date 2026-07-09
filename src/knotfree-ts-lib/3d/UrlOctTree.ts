@@ -401,9 +401,15 @@ export function GetChildBitsCache(name: string): ChildBitsCacheEntry | null {
     if (found) {
         const age = Date.now() - found.when
         if (age > gChildBitsCacheMaxAge) {
-            // put it on a Q to get fixed later. 
-            // right now this is killing prod.
+            // put it on a Q to get fixed later. Or, just order ALL the child bit cache again. like we did at the beginning.s
+            // right now this will kill prod.
             return found || null
+            // we should return the current value, as we do, and then immediately start a calcChildrenBits.
+            // TODO: we should have a Q of names to calcChildrenBits and then we should have a worker that does them one at a time.
+            // Hey CP, you moron, Why would we do them one at a time? 
+            // when the calcChildrenBits is done then we should update the cache make a note of 
+            // whether anything changed because mostly nothing will. 
+            // see calcChildrenBitsForName or something
 
             gChildBitsCache.delete(name)
             ourLocalStorage.removeItem(name)

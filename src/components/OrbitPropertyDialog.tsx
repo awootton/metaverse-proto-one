@@ -16,6 +16,8 @@ import {
     Button
 } from '@mui/material'
 import { Close } from '@mui/icons-material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 import { Tooltip } from 'react-tooltip'
 
@@ -48,6 +50,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
     console.log("OrbitPropertyDialog starting with props ", props, " props as blue cubes: ", props.worldDisplayState.onlyShowOutlineBoxes)
 
     const [showingLeaves, setShowingLeaves] = useState([] as oct.TreeStatus[])
+    const [showingTextPortion, setShowingTextPortion] = useState(true)
 
     const zzzzUESLESSstatePassedIN: WorldDisplayState = {
         ...props.worldDisplayState,
@@ -220,25 +223,22 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
         }
     }
 
-    return (
-        <>
-            <div id="orbit-property-dialog"
-                style={{
-                    // position: 'absolute', does this do anything?
-                    top: 0, left: 0, width: '100%', height: '100%'
-                }}>
+    function UpOrDownIcon() {
+        if ( !showingTextPortion) {
+            return (
+                <ExpandMoreIcon style={{ fontSize: '24px', color: 'black' }} />
+            )
+        } else {
+            return (
+                <ExpandLessIcon style={{ fontSize: '24px', color: 'black' }} />
+            )
+        }
+    }
 
-                <Dialog open={props.open} fullWidth maxWidth="lg"
-                    fullScreen
-                    onClose={props.onClose}
-                >
-                    <DialogTitle>{props.title}</DialogTitle>
-                    <Box sx={{ position: 'absolute', top: 4, right: 4 }}>
-                        <IconButton onClick={props.onClose} size="small">
-                            <Close />
-                        </IconButton>
-                    </Box>
-
+    function TheTopText() {
+        if (showingTextPortion) {
+            return (
+                <>
                     <div style={{ padding: '4px', fontSize: '18px', color: 'black' }}>
                         <p style={pStyle()} >
                             Drag with mouse to orbit, scroll to zoom, right click to pan.</p>
@@ -322,6 +322,52 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
 
                         </span>
                     </Box>
+                </>
+            )
+        } else {
+            return (
+                <>
+                </>
+            )
+        }
+    }
+
+    return (
+        <>
+            <div id="orbit-property-dialog"
+                style={{
+                    // position: 'absolute', does this do anything?
+                    top: 0, left: 0, width: '100%', height: '100%'
+                }}>
+
+                <Dialog open={props.open} fullWidth maxWidth="lg"
+                    fullScreen
+                    onClose={props.onClose}
+                >
+                    <DialogTitle>{props.title}</DialogTitle>
+
+
+                    <Box sx={{
+                        position: 'absolute',  top: 4, right: 256,
+                        // top: '50%', didn't work. 
+                        // left: '50%',
+                        // transform: 'translate(-50%, -50%)',
+
+                    }}>
+                        <span style={{ fontSize: '12px', color: 'black' }}>Click to show or hide the text portion of this dialog.</span>
+                        <IconButton onClick={() => setShowingTextPortion(!showingTextPortion)} size="small">
+                            {UpOrDownIcon()}
+                        </IconButton>
+                    </Box>
+
+
+                    <Box sx={{ position: 'absolute', top: 4, right: 4 }}>
+                        <IconButton onClick={props.onClose} size="small">
+                            <Close />
+                        </IconButton>
+                    </Box>
+
+                    {TheTopText()}
 
                     {makeTheCanvas()}
 

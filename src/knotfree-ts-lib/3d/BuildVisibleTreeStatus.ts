@@ -207,7 +207,7 @@ export class BuildVisibleTreeStatus {
             }
         } // end gen 8 octants
         const octantNames = octants.map(o => oct.CubeToString(o.cube)[0])
-        console.log("Generated octant names: ", octantNames)
+        // console.log("Generated octant names: ", octantNames)
         // I'm not sure that the stupid -n suffixes on these make sense but they are correct! 
         // these are the octants of level 16.
         // just make their treeStatuses. calc their children bits and then recurse into them if they exist and are visible.
@@ -415,7 +415,7 @@ export class BuildVisibleTreeStatus {
             }
         } // end gen 8 octants
         const octantNames = octants.map(o => oct.CubeToString(o.cube)[0])
-        console.log("Generated octant names: ", octantNames)
+        // console.log("Generated octant names: ", octantNames)
         // I'm not sure that the stupid -n suffixes on these make sense but they are correct! 
 
         // We shall build this. it will be in the cache. 
@@ -644,6 +644,9 @@ export class BuildVisibleTreeStatus {
                 const cachedEntry = oct.GetChildBitsCache(akey)
                 if (cachedEntry && cachedEntry.TXT) {
                     // we have the groupId in the cache. Let's fill it in.
+
+                    console.log("found groupID for ", treeStatus.name, " in cache: ", cachedEntry.TXT)
+
                     const groupObj = cachedEntry.TXT
                     treeStatus.groupId = groupObj
                 }
@@ -903,20 +906,6 @@ export class BuildVisibleTreeStatus {
             // console.log(`cube ${oct.CubeToString(cube)[0]} is not visible. ratio: ${ratio}, distance: ${distance}, halfCubeSize: ${halfCubeSize}`)
         }
         return isVis
-
-        // let closestX = Math.max(cube.x, Math.min(cameraPos.x, cube.x + 2 ** cube.p))
-        // let closestY = Math.max(cube.y, Math.min(cameraPos.y, cube.y + 2 ** cube.p))
-        // let closestZ = Math.max(cube.z, Math.min(cameraPos.z, cube.z + 2 ** cube.p))
-
-        // let dx = closestX - cameraPos.x
-        // let dy = closestY - cameraPos.y
-        // let dz = closestZ - cameraPos.z
-
-        // let dist = Math.sqrt(dx * dx + dy * dy + dz * dz)
-        // let width = 2 ** cube.p // the diagonal of the cube, which is the longest distance from the center to a corner. If we're within this distance, we should see at least part of the cube. We can adjust this with a multiplier if we want to be more or less aggressive about showing cubes.
-        // const ratio = dist / width
-        // const tan = Math.tan(angle) * 180 / Math.PI // convert to degrees
-        // return tan > angle
     }
 }
 
@@ -926,7 +915,7 @@ export class BuildVisibleTreeStatus {
 // Example: The calcChildrenBits of testmain-0n0u1w7p-4 are actually the bits of the 4th subspace of 
 //  the 7p, which are all 6p's 
 //  if we want to check for leaves they would be the 8 subcubes of THAT 6p, which would be 5p's.
-//  It's hard to think about sometimes.
+//  It's hard to think about sometimes. Maybe I did it wrong? ! ?
 export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBits: number): Promise<[number, Error | null]> {
 
     if (previousBits === -1) {

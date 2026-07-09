@@ -45,16 +45,10 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({ triggerLabel, items 
       {   position: "relative", 
           display: "inline-block"}
       }>
-      {/* <button 
-        className="dropdown-trigger" 
-        onClick={toggleMenu}
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-      >
-        {triggerLabel} {isOpen ? "▲" : "▼"}
-      </button> */}
 
-      <MoreHorizIcon onClick={toggleMenu} style={{ cursor: "pointer" }} />
+      <div onClick={toggleMenu} style={{ cursor: "pointer" }}>
+        {triggerLabel}
+      </div>
 
       {isOpen && (
         <ul 
