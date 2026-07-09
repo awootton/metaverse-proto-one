@@ -1,0 +1,77 @@
+/* ============================================
+   The Metaverse Proto - Custom Styles
+   ============================================ */
+
+/* Font for headings (pairs beautifully with Inter) */
+.font-display {
+  font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Animated background grid for hero */
+.metaverse-grid {
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-move 25s linear infinite;
+}
+
+@keyframes grid-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+/* Underline hover effect for nav links */
+.nav-link {
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background: linear-gradient(to right, #00f0ff, #a855f7);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Glassmorphism card effect */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Optional: Neon text glow (used on some headings) */
+.neon-text {
+  text-shadow: 
+    0 0 10px rgba(0, 240, 255, 0.5),
+    0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+/* Smooth transitions for interactive elements */
+button, a {
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Active/pressed state scaling */
+button:active, a:active {
+  transform: scale(0.985);
+}
+
+/* ============================================
+   Usage Notes:
+   - Link this file after Tailwind in your HTML
+   - Or import it in your React/Next.js project
+   - The .glass and .nav-link classes are used throughout
+   ============================================ */
