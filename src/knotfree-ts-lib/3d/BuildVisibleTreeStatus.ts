@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 
 import { CacheIntf } from './CacheIntf';
-import * as oct from './UrlOctTree'
+import * as oct from './DomainNameOctTree'
 import { error } from 'console';
 
 // import * as octload from './OctTreeLoaders'
@@ -292,7 +292,7 @@ export class BuildVisibleTreeStatus {
                 let commaList = ""// = listOfXyzleaves.map(ts => ts.name).join(".xyz,")
                 for (let i = 0; i < listOfXyzleaves.length; i++) {
                     const ts = listOfXyzleaves[i]
-                    commaList += "meta_group_id." + ts.name + ".xyz"
+                    commaList += "meta_group_id." + ts.name + ".xyz" // allowed
                     if (i < listOfXyzleaves.length - 1) {
                         commaList += ","
                     }
@@ -337,7 +337,7 @@ export class BuildVisibleTreeStatus {
                 let commaList = "" //= listOfVrleaves.map(ts => ts.name).join(",")
                 for (let i = 0; i < listOfVrleaves.length; i++) {
                     const ts = listOfVrleaves[i]
-                    commaList += "meta_group_id." + ts.name + ".vr"
+                    commaList += "meta_group_id." + ts.name + ".vr" // allowed
                     if (i < listOfVrleaves.length - 1) {
                         commaList += ","
                     }
@@ -378,6 +378,95 @@ export class BuildVisibleTreeStatus {
                     oct.SetChildBitsCacheEntry(key, groupEntry)
                 }
             }
+
+            // if (false) { where did twoWayLookupPart1 go, anyway? 
+            //     // no, bad design. We would be fetching stuff we already know we don't need because we just merged it.
+            //     // a two way lookup ?? yep. Why are we doing the merge again here? 
+            //     // this is a bad design. Fire the programmer.
+            //     const a = octload.twoWayLookupPart1(needGroupIdLookup, "TXT", "meta_group_id")
+            //     // this is a NOT merged result of the .vr and then .xyz lookups. 
+            //     // totally annoying how this is hard to use.
+            //     const result = await a
+            //     // then the AI writes it and it's fluffy.
+
+            //     let vrResponses: atwdns.DnsResponse[] = []
+            //     let xyzResponses: atwdns.DnsResponse[] = []
+            //     // for (const part of result)
+            //     { // first the vr list and then the xyz list
+            //         const settledVR = await result[0]
+            //         if (settledVR.status === "fulfilled" && !(settledVR.value instanceof Error)) {
+            //             // const answers = await settledVR.value
+            //             vrResponses = settledVR.value as atwdns.DnsResponse[]
+            //         } else {
+            //             console.error("bvts Error in TwoWayLookupPart1 for groupId lookup: part promise rejected: ")
+            //         }
+
+            //         const settledXYZ = await result[1]
+            //         if (settledXYZ.status === "fulfilled" && !(settledXYZ.value instanceof Error)) {
+            //             // const answers = await settledXYZ.value
+            //             xyzResponses = settledXYZ.value as atwdns.DnsResponse[]
+            //         } else {
+            //             console.error("bvts Error in TwoWayLookupPart1 for groupId lookup: part promise rejected: ")
+            //         }
+            //     }
+            //     // do they have the same length?
+            //     if (vrResponses.length !== xyzResponses.length) {
+            //         console.error("bvts Error: VR and XYZ responses have different lengths in groupId lookup. VR length: ", vrResponses.length, " XYZ length: ", xyzResponses.length)
+            //         // we can still try to merge them based on the names, but this is a sign that something is wrong.
+            //         // no, we're screwed
+            //         return new Error(`bvts Error: VR and XYZ responses have different lengths in groupId lookup. VR length: ${vrResponses.length}, XYZ length: ${xyzResponses.length}`)
+            //     }
+            //     // are they in order?
+            //     for (let i = 0; i < vrResponses.length; i++) {
+            //         const [vrName, vrType] = atwdns.GetQuestion(vrResponses[i])
+            //         const [xyzName, xyzType] = atwdns.GetQuestion(xyzResponses[i])
+            //         // console.log("VR response question: ", vrName, " type: ", vrType)
+            //         // console.log("XYZ response question: ", xyzName, " type: ", xyzType)
+            //         if (vrName !== xyzName.replace(".xyz", ".vr") || vrType !== xyzType) {
+            //             console.error("bvts Error: VR and XYZ responses are not in the same order in groupId lookup. VR question: ", vrName, " type: ", vrType, " XYZ question: ", xyzName, " type: ", xyzType)
+            //             // there's still the needGroupIdLookup array that we made and it should match
+            //             // I just want to know. 
+            //         }
+            //         // yes, in order. The name is in the question
+            //         const parts = vrName.split(".")
+            //         let cubeName = ""
+            //         if (parts.length > 2) {
+            //             const cubePart = parts[1] // this should be the cube name. We can use this to match back to the treeStatus.
+            //             cubeName = cubePart.replace(".vr", "") // remove the -vr suffix to get the cube name. This should match the names in needGroupIdLookup and the cache.
+            //         } else {
+            //             // can't find the name
+            //             const [cubeNameFromUrl, err] = oct.CubeToString(needGroupIdLookup[i])
+            //             cubeName = cubeNameFromUrl
+            //         }
+            //         const treeStatus = this.cubeCache.get(cubeName)
+            //         if (!treeStatus) {
+            //             console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", cubeName)
+            //             continue
+            //         }
+            //         const answer1 = atwdns.GetAnswer(vrResponses[i])[1] // eg '{"grp":"j9xK3mP8wL2z","dbg":"localhost:3010","type":"floor","asset":"cobblestonesgrok512.jpg:repeat:20"}'
+            //         const answer2 = atwdns.GetAnswer(xyzResponses[i])[1] // eg ''
+            //         // console.log("VR response answer: ", answer1)
+            //         // console.log("XYZ response answer: ", answer2)
+            //         let answer = answer1
+            //         if (answer.length < answer2.length) {
+            //             answer = answer2
+            //         }
+            //         try {
+            //             const grp = JSON.parse(answer) as oct.GroupTextParameters
+            //             if (grp.grp === undefined || grp.grp === "") {
+            //                 grp.grp = utils.randomString(24)
+            //             }
+            //             treeStatus.groupId = grp
+            //             this.cubeCache.set(treeStatus.name, treeStatus)
+            //         } catch (err) {
+            //             const defaultgrp = {
+            //                 grp: utils.randomString(24) //
+            //             } as oct.GroupTextParameters
+            //             treeStatus.groupId = defaultgrp
+            //             this.cubeCache.set(treeStatus.name, treeStatus)
+            //         }
+            //     }
+            // }
         }
         return null
     }
@@ -997,7 +1086,7 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
             const nodename = spacename + "-" + i // this is the naming convention for the subtrees. It's a bit gross but it works.
             // console.log("bvts checking cache nodename ", nodename)
             name2indexMap.set(nodename, i)
-            const tmp = oct.gCubeCache.get(nodename)
+            const tmp = oct.gTreeStatusCache.get(nodename)
             if (!tmp) {
                 const acube = oct.StringToCube(nodename)[0] // todo: check err
                 needToLookUp.push(acube)
@@ -1010,7 +1099,7 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
             const childCube = oct.GetChildCube(cube, i)
             const childKey = oct.CubeToString(childCube)[0] // check error
             name2indexMap.set(childKey, i)
-            const tmp = oct.gCubeCache.get(childKey)
+            const tmp = oct.gTreeStatusCache.get(childKey)
             if (!tmp) {
                 needToLookUp.push(childCube)
             } else {
@@ -1074,11 +1163,11 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
                 return [-1, new Error(`bvts Error: child or node missing for index ${i}`)]
             }
             if (child.found) {
-                oct.gCubeCache.set(child.name, child)
+                oct.gTreeStatusCache.set(child.name, child)
                 madeChildBits = oct.SetIsXyz(madeChildBits, i, child.wasXYZ)
             }
             if (node.found) {
-                oct.gCubeCache.set(node.name, node)
+                oct.gTreeStatusCache.set(node.name, node)
                 madeChildBits = oct.SetIsXyz(madeChildBits, i, node.wasXYZ)
             }
             if (child.found && node.found) {
@@ -1121,7 +1210,7 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
         const nodename = spacename + "-" + i // this is the naming convention for the subtrees. It's a bit gross but it works.
         if (oct.IsParent(aCachedEntry.childrenBits, i)) {
             const acube = oct.StringToCube(nodename)[0] // todo: check err
-            const tmp = oct.gCubeCache.get(nodename)
+            const tmp = oct.gTreeStatusCache.get(nodename)
             if (!tmp) {
                 const newTreeStatus: oct.TreeStatus = {
                     name: nodename,
@@ -1135,12 +1224,12 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
                     error: null
                 }
                 // FAKED console.log("bvts DoNameLookupsForCachedChildBits adding to cache: ", nodename)
-                oct.gCubeCache.set(nodename, newTreeStatus)
+                oct.gTreeStatusCache.set(nodename, newTreeStatus)
             }
         } else if (oct.ChildExists(aCachedEntry.childrenBits, i)) {
             const childCube = oct.GetChildCube(oct.StringToCube(spacename)[0], i)
             const childKey = oct.CubeToString(childCube)[0] // check error
-            const tmp = oct.gCubeCache.get(childKey)
+            const tmp = oct.gTreeStatusCache.get(childKey)
             if (!tmp) {
                 const newTreeStatus: oct.TreeStatus = {
                     name: childKey,
@@ -1154,7 +1243,7 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
                     error: null
                 }
                 // FAKED console.log("bvts DoNameLookupsForCachedChildBits adding to cache: ", childKey)
-                oct.gCubeCache.set(childKey, newTreeStatus)
+                oct.gTreeStatusCache.set(childKey, newTreeStatus)
             }
         }
     }

@@ -1,6 +1,6 @@
 
 
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import * as fs from 'fs'
 
 
@@ -9,9 +9,9 @@ const fileName = "./my-cache/cubeCache.json"
 // this is all local to the fs
 
 export function WriteAllTheCubeCacheOut() {
-    console.log("gCubeCache contents: ")
+    console.log("gTreeStatusCache contents: ")
 
-    const arr = Array.from(oct.gCubeCache.entries())
+    const arr = Array.from(oct.gTreeStatusCache.entries())
     console.log("arr: ", arr.length)
     const bigStr = JSON.stringify(arr, null, 2) // pretty ! 
     // console.log("bigStr: ", bigStr)
@@ -27,7 +27,7 @@ export function ReadAllTheCubeCacheIn() {
         }
         const arr = JSON.parse(data) as Array<[string, oct.TreeStatus]>
         arr.forEach(([key, value]) => {
-            oct.gCubeCache.set(key, value)
+            oct.gTreeStatusCache.set(key, value)
         })
         console.log("Loaded cache entries: ", arr.length)
     } catch (error) {

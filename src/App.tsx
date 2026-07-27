@@ -3,34 +3,23 @@ import * as THREE from 'three'
 import * as React from 'react'
 import { useRef, useState } from 'react'
 import preval from 'preval.macro'
-import { Perf } from 'r3f-perf'
-
 import { MenuItem, DropdownMenu } from "./components/MainMenu"
-
-import * as  nav1 from './components/NavigatorTest1'
 import { StarsDialog } from './knotfree-ts-lib/components/StarsDialog'
-
-import MarkdownDialog from './components/MarkdownDialog'
-import { MainWorldDisplay } from './components/MainWorldDisplay'
-import { WorldDisplayState } from './components/WorldDisplayState'
 import Switch from '@mui/material/Switch'
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
-import Close from '@mui/icons-material/Close';
 
-import { OrbitPropertyDialog } from './components/OrbitPropertyDialog'
 
-import * as bvts from './knotfree-ts-lib/3d/BuildVisibleTreeStatus';
 import { myMapCacheIntf } from './knotfree-ts-lib/3d/CacheIntf'; // just a map.
-import * as oct from './knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from './knotfree-ts-lib/3d/DomainNameOctTree'
 import * as utils from './knotfree-ts-lib/3d/utils'
 
 import * as pubsub from "./components/PubSubTopicAndSubscribers"
+
 import { MyInputDialog } from './knotfree-ts-lib/components/MyInputDialog'
-import { StartLoadFromDbAndRun } from './components/AppCanvas'
 import AppCanvas from './components/AppCanvas'
 import AboutGotohereDialog from './components/AboutGotohereDialog'
+
+import { MakeListOfIFrames } from './FrameUtils/MakeListOfIFrames'
 
 const doClear = new URLSearchParams(window.location.search).get("clear")
 // I just changed some definitions so lets start fresh.
@@ -59,30 +48,51 @@ if (locparam) {
   }
 }
 
-const InitialGlobalAppDisplayState: WorldDisplayState = {
-  worldName: startingCube.world,
-  previousCameraPosition: new THREE.Vector3(-2, 1.75, 10),
-  currentCameraPosition: new THREE.Vector3(-2, 1.75, 12),
-  timeSinceLastCameraMovement: 0,
+type AppState = {
+
+  worldName: string,
+  // previousCameraPosition: THREE.Vector3,
+  // currentCameraPosition: THREE.Vector3,
+  // timeSinceLastCameraMovement: 0,
   // each view should really have their own one of these.
-  theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
-  uniqueId: utils.randomString(24),
-  onlyShowOutlineBoxes: false,
-  showOriginAxis: true,
-  toggleOnlyShowOutlineBoxes: () => {
-    console.log("App OnlyShowOutlineBoxes toggle needs override. " +
-      "This is a placeholder. It should be overridden by the parent component.")
-  }
+  //theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
+  // no, only for subs uniqueId: string,
+  // onlyShowOutlineBoxes: boolean,
+  // showOriginAxis: boolean,
+  // toggleOnlyShowOutlineBoxes: () => any
+
 }
 
-// it's async but I'm not waiting.
-StartLoadFromDbAndRun(InitialGlobalAppDisplayState)
+// const startingUniqueId = utils.randomString(24) // this is a unique identifier for the component instance, 
+// so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
+// it must old still and still be unique.
+
+// these postiions that change should not be ion here.
+
+export const DefaultCameraPosition = new THREE.Vector3(-2, 1.75, 10);
+
+const InitialGlobalAppDisplayState: AppState = {
+
+  worldName: startingCube.world,
+  // previousCameraPosition: new THREE.Vector3(-2, 1.75, 10),
+  // currentCameraPosition: new THREE.Vector3(-2, 1.75, 12),
+  // timeSinceLastCameraMovement: 0,
+  // each view should really have their own one of these.
+  //theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
+ // no uniqueId: startingUniqueId,
+  //onlyShowOutlineBoxes: false,
+  // broken feature showOriginAxis: true,
+  // toggleOnlyShowOutlineBoxes: () => {
+  //   console.log("App OnlyShowOutlineBoxes toggle needs override. " +
+  //     "This is a placeholder. It should be overridden by the parent component.")
+  // }
+}
 
 console.log("App url ", window.location.href)
 
 // The problem is that NewestAppToggleOnlyShowOutlineBoxes and the state change every time.
 // We must call the latest.
-var LatestAppToggleOnlyShowOutlineBoxes: (state: WorldDisplayState) => void = () => {}
+var LatestAppToggleOnlyShowOutlineBoxes: (state: AppState) => void = () => { }
 
 export default function App() {
 
@@ -95,28 +105,27 @@ export default function App() {
   // console.log("App starting with localStorage child bits cache loadout of   ", oct.GetTheWholeChildBitsLocalCache().size, " items.")
 
   //because we can reference a function before it's defined
-  const startingAppDisplayState: WorldDisplayState = {
+  const startingAppDisplayState: AppState = {
     ...InitialGlobalAppDisplayState,
-    onlyShowOutlineBoxes: false,
-    toggleOnlyShowOutlineBoxes: () => { LatestAppToggleOnlyShowOutlineBoxes(startingAppDisplayState) }
+   //  showOriginAxis: true,
+
+    // onlyShowOutlineBoxes: false,
+    // toggleOnlyShowOutlineBoxes: () => { LatestAppToggleOnlyShowOutlineBoxes(startingAppDisplayState) }
   }
+
+  const [onlyShowOutlineBoxes, setOnlyShowOutlineBoxes] = useState(false);
+
 
   const [appDisplayState, setAppDisplayState] = useState(startingAppDisplayState);
 
-  function NewestAppToggleOnlyShowOutlineBoxes() {
-    // there's no storage for this one. Imagine the confusion that could result
-    let showThem = !appDisplayState.onlyShowOutlineBoxes;
-    console.log("App OnlyShowOutlineBoxes is now ", showThem)
-    const newState = {
-      ...appDisplayState,
-      onlyShowOutlineBoxes: showThem,
-    }
-    setAppDisplayState(newState)
+  function ToggleOnlyShowOutlineBoxes() { // whY do we even need this?
+    let showThem = !onlyShowOutlineBoxes;   
+    setOnlyShowOutlineBoxes(showThem)
   }
   // really a useEffect thing. No?
-  LatestAppToggleOnlyShowOutlineBoxes = NewestAppToggleOnlyShowOutlineBoxes
+ // LatestAppToggleOnlyShowOutlineBoxes = NewestAppToggleOnlyShowOutlineBoxes
 
-  // console.log("App Starting with  ", appDisplayState.uniqueId)
+  // console.log("App Starting with  ", appDisplayState. uniqueId)
 
   const hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
   // console.log("App hideHelpOnStart ", hideHelpOnStart)
@@ -138,7 +147,7 @@ export default function App() {
   // we have a dialog for it and we have this state but nobody is using it.
   const [worldNameOpen, setWorldNameOpen] = useState(false); // open the dialog
   const [worldName, setWorldName] = useState("testmain");
-
+  const [uniqueId, setUniqueId] = useState(utils.randomString(24));
 
   // use effect to subscribe to the pubsub topic for showingLeaves, which is what the MainWorldDisplay will publish when it has new leaves to show.
 
@@ -155,7 +164,7 @@ export default function App() {
   React.useEffect(() => {
 
     // const unsubscribe = 
-    pubsub.subscribe("ShowingLeavesChanges", "App" + appDisplayState.uniqueId,
+    pubsub.subscribe("ShowingLeavesChanges", "App" +  uniqueId,
       (leaves: oct.TreeStatus[]) => {
         // it's sending me a damn map. wtf. 
         // console.log("App got showingLeaves ", leaves)
@@ -167,18 +176,18 @@ export default function App() {
             console.error("App got showingLeaves with invalid leaf ", leaf)
           }
         }
-
+        console.log("App got showingLeaves ", leaves.length, " leaves.")
         setShowingLeaves(leaves)
       })
 
     return () => {
-      pubsub.unsubscribe("ShowingLeavesChanges", "App" + appDisplayState.uniqueId)
+      pubsub.unsubscribe("ShowingLeavesChanges", "App" +  uniqueId)
     }
   }, [showingLeaves])
 
   React.useEffect(() => { // loading message.
 
-    pubsub.subscribe("LoadingMessage", "App" + appDisplayState.uniqueId,
+    pubsub.subscribe("LoadingMessage", "App" +  uniqueId,
       (message: string) => {
         // it's sending me a damn map. wtf. 
         // console.log("App got loadingMessage ", message)
@@ -186,22 +195,24 @@ export default function App() {
       })
 
     return () => {
-      pubsub.unsubscribe("LoadingMessage", "App" + appDisplayState.uniqueId)
+      pubsub.unsubscribe("LoadingMessage", "App" +  uniqueId)
     }
   }, [loadingMessage])
 
 
   const MainMenuActions: MenuItem[] = [
     { id: "About", label: "About", onClick: () => setHelpClicked(true) },
-    { id: "Enter-a-pace", label: "Orbital view.", onClick: () => setOrbit(true) },
+    // { id: "Enter-a-pace", label: "Orbital view.", onClick: () => setOrbit(true) },
     { id: "misc-options", label: "Explore kooky options.", onClick: () => setWorldNameOpen(true) },
     // { id: "premium", label: "Upgrade to Premium (Locked)", onClick: () => {}, disabled: true },
     // { id: "logout", label: "Sign Out", onClick: () => alert("Logging out!") },
     { id: "Egg", label: "easter egg", onClick: () => setStars(true) },
   ];
 
-  var shouldShowMainWorldDisplay = true
   var shouldShowOrbitalCanvasDisplay = false
+
+  var shouldShowMainWorldDisplay = true
+
   if (orbit) { // || helpClicked || stars) {
     shouldShowMainWorldDisplay = false
     // for now, we don't want to show the main world display when we're in orbital view, 
@@ -213,17 +224,21 @@ export default function App() {
     shouldShowOrbitalCanvasDisplay = true
   }
 
-  //  was <DropdownMenu triggerLabel={(<div><MoreHorizIcon /></div>)} items={MainMenuActions} />
-  // want MenuOpenIcon because Wendy didn't see it.
-
-  // <CloseIcon />
-
-  //  <DropdownMenu triggerLabel={(<div><MenuOpenIcon/></div>)} items={MainMenuActions} />
-
-
   // console.log("App refresh  refresh  refresh  refresh  worldName ", worldName, "hideHelpOnStartState ", hideHelpOnStartState)
+
+  // console.log("OrbitPropertyDialog has state ", orbit)
+  // console.log("OrbitPropertyDialog shouldShowOrbitalCanvasDisplay ", shouldShowOrbitalCanvasDisplay)
+  // console.log("OrbitPropertyDialog shouldShowOrbitalCanvasDisplay ", shouldShowOrbitalCanvasDisplay)
+
   return (
     <>
+
+      {MakeListOfIFrames()}
+
+      {/* <div className="normal div" style={{ alignItems: 'center', fontSize: '12px' }}> gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc  
+        <button onClick={() => { setStars(true) }}>push me wh</button>
+      </div> */}
+
       {/* top bar */}
       <span style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '12px' }}>
         <div>github.com/awootton/metaverse-proto-one </div>
@@ -232,18 +247,20 @@ export default function App() {
         <DropdownMenu triggerLabel={(<div><MenuOpenIcon /></div>)} items={MainMenuActions} />
         {/* <StarPurple500Icon onClick={() => { setStars(true) }}  /> */}
         <div>{loadingMessage}.</div>
-      </span>
+        <Switch checked={onlyShowOutlineBoxes} size="small"
+          onClick={() => ToggleOnlyShowOutlineBoxes()} />X-Ray
+        <Switch checked={orbit} size="small"
+          onClick={() => setOrbit(!orbit)} />Orbital View
+      </span >
 
       <AppCanvas
-        state={{
-          ...appDisplayState,
-          showOriginAxis: showAxisAtOrigin, // the SetState here
-          toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
-        }} // pass the state down to the AppCanvas
-        //  previousCameraPosition={defaultCameraPosition}
-        //  timeSinceLastCameraMovement={0}
-        //  theGlobalTree={new bvts.BuildVisibleTreeStatus(myMapCacheIntf)}
+
+        worldName={worldName}
+       // uniqueId={appDisplayState.uniqueId}
+        showOriginAxis={showAxisAtOrigin}
+        onlyShowOutlineBoxes={onlyShowOutlineBoxes}
         shouldShowMainWorldDisplay={shouldShowMainWorldDisplay}
+        initialCameraPosition={DefaultCameraPosition} // appDisplayState.currentCameraPosition}
         showingLeaves={showingLeaves}
       />
 
@@ -270,23 +287,6 @@ export default function App() {
         title=""
       />
 
-      <OrbitPropertyDialog
-        open={orbit}
-        // spaces={demo PropertiesState} // this would be the comma delimited list of properties that you want to load and display in the 3D view. The dialog would have an input box where you can enter these, and an OK button to confirm.
-        // worldName={worldName}
-        // maybe the dialog should make it's own state thing for it's own canvas.
-        worldDisplayState={{
-          ...appDisplayState,
-          showOriginAxis: showAxisAtOrigin, // the SetState here
-          toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
-        }}
-        shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
-
-        onClose={() => { setOrbit(false) }} //
-        onConfirm={() => { }}
-        title="Orbital View"
-      />
-
       <MyInputDialog
         open={worldNameOpen}
         onClose={() => { setWorldNameOpen(false) }}
@@ -304,7 +304,6 @@ export default function App() {
         }}
         label="Enter a world name"
         default={worldName}
-
         inject={(
           <>
             <br />
@@ -312,15 +311,83 @@ export default function App() {
               <Switch checked={showAxisAtOrigin} size="small" onClick={() => toggleShowAxisAtOrigin()} />Show the axis at the origin
             </div>
             <div>
-              <Switch checked={appDisplayState.onlyShowOutlineBoxes} size="small" 
-              onClick={() => appDisplayState.toggleOnlyShowOutlineBoxes()} />Show owned properties as blue cubes. See their addresses.
+              <Switch checked={onlyShowOutlineBoxes} size="small" onClick={() => toggleOnlyShowOutlineBoxes()} />Show owned properties as blue cubes. See their addresses.
             </div>
           </>
         )}
       />
 
+
+      {/* <OrbitPropertyDialog
+
+        open={orbit && ! shouldShowMainWorldDisplay}
+
+        shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay} // I suppose this should be true.
+        worldName={worldName}
+        showOriginAxis={showAxisAtOrigin}
+        onClose={() => { setOrbit(false) }} //
+        onConfirm={() => { }}
+        title="Orbital View"
+      /> */}
+
     </>
   )
+  {/*  made skinny and moved to top {MakeListOfIFrames()} */ }
+
+  //       {MakeTheOrbitDialog()}
+
+
+  //   <Orbit PropertyDialog
+  //   open={orbit}
+  //   // spaces={demo PropertiesState} // this would be the comma delimited list of properties that you want to load and display in the 3D view. The dialog would have an input box where you can enter these, and an OK button to confirm.
+  //   // worldName={worldName}
+  //   // maybe the dialog should make it's own state thing for it's own canvas.
+  //   worldDisplayState={{
+  //     ...appDisplayState,
+  //     showOriginAxis: showAxisAtOrigin, // the SetState here
+  //     toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
+  //   }}
+  //   shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
+
+  //   onClose={() => { setOrbit(false) }} //
+  //   onConfirm={() => { }}
+  //   title="Orbital View"
+  // />
+
+
+
+  // function Make TheOrbitDialog() {
+
+  //   // the problem is that he doesn't get the list of leaves.
+  //   // nobody is saving it for hi.
+
+  //   if (orbit || true) {
+  //     return (
+
+  //       <Orbit PropertyDialog
+  //         open={orbit}
+  //         // spaces={demo PropertiesState} // this would be the comma delimited list of properties that you want to load and display in the 3D view. The dialog would have an input box where you can enter these, and an OK button to confirm.
+  //         // worldName={worldName}
+  //         // maybe the dialog should make it's own state thing for it's own canvas.
+  //         worldDisplayState={{
+  //           ...appDisplayState,
+  //           showOriginAxis: showAxisAtOrigin, // the SetState here
+  //           toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
+  //         }}
+  //         shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
+
+  //         onClose={() => { setOrbit(false) }} //
+  //         onConfirm={() => { }}
+  //         title="Orbital View"
+  //       />
+  //     )
+  //   } else return (<>
+
+  //   </>
+  //   )
+  // }
+
+  //  
 
   function toggleHideHelpOnStart() {
     let hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
@@ -332,6 +399,18 @@ export default function App() {
     hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
     setHideHelpOnStartState(hideHelpOnStart === null);
     console.log("App toggleHideHelpOnStart ", hideHelpOnStart, hideHelpOnStartState)
+  }
+
+  function toggleOnlyShowOutlineBoxes() {
+    // there's no storage for this one. Imagine the confusion that could result
+    let showThem = !onlyShowOutlineBoxes;
+    console.log("App OnlyShowOutlineBoxes is now ", showThem)
+    setOnlyShowOutlineBoxes(showThem);
+    const newState = {
+      ...appDisplayState,
+      onlyShowOutlineBoxes: showThem,
+    }
+    setAppDisplayState(newState)
   }
 
 
@@ -363,194 +442,72 @@ export default function App() {
 
 
 const helpText99 = `
-## To my dearest love. I made this for you. Please text me when you see it.
+      ## To my dearest love. I made this for you. Please text me when you see it.
 
-#### It's a demonstration of how buying a domain name in a particular format can be the same as buying a property in the metaverse.
+      #### It's a demonstration of how buying a domain name in a particular format can be the same as buying a property in the metaverse.
 
-People love buying domain names and trying to do interesting things with them. I won't pretend to know the 
-thousands of interesting things that people will think of but I know there's more to it than stock quotes, sports, weather and porn.
+      People love buying domain names and trying to do interesting things with them. I won't pretend to know the
+      thousands of interesting things that people will think of but I know there's more to it than stock quotes, sports, weather and porn.
 
-As we know, the rush to do this stuff in 3d hasn't happened hard but here's a demo of a way how it could happen. A bird in the hand. 
+      As we know, the rush to do this stuff in 3d hasn't happened hard but here's a demo of a way how it could happen. A bird in the hand.
 
-Remember. You own all this. I give you all the copyright and all the rights to it. You can do whatever you want with it. 
-I don't care. I just want to see it happen and I love you to the moon and back. 
+      Remember. You own all this. I give you all the copyright and all the rights to it. You can do whatever you want with it.
+      I don't care. I just want to see it happen and I love you to the moon and back.
 
-`
+      `
 
 // https://x.com/alan_t_wootton/status/2074578390208983408?s=20 
 
 const helpText = `
-## How to buy property in The Metaverse. Just buy a domain name of the right format.
-#### Like, for real. There’s a new demo release. Today! 
+      ## How to buy property in The Metaverse. Just buy a domain name of the right format.
+      #### Like, for real. There’s a new demo release. Today!
 
-[See the latest content at X.com.](https://x.com/alan_t_wootton/status/2074578390208983408?s=20 )
+      [See the latest content at X.com.](https://x.com/alan_t_wootton/status/2074578390208983408?s=20 )
 
-http://gotohere.com is this demo.
+      http://gotohere.com is this demo.
 
-There's no shortage of people debating about how the best way to buy virtual property in the metaverse.
-What I have is a solid demonstration of it happening.
-Next up is how to interact with the property and how others can interact with it. 
-How other things, cars, avatars, and other things can interact with property and each other.
+      There's no shortage of people debating about how the best way to buy virtual property in the metaverse.
+      What I have is a solid demonstration of it happening.
+      Next up is how to interact with the property and how others can interact with it.
+      How other things, cars, avatars, and other things can interact with property and each other.
 
-As I describe the technique I'll provide working code and a working demo. It's what I do. And then, There will be ... The Metaverse.
+      As I describe the technique I'll provide working code and a working demo. It's what I do. And then, There will be ... The Metaverse.
 
-Follow me. @alan_t_wootton on X. I'm blogging about it there. I don't have time for much social media. I have a lot of work to do.
-
-`
-
-
+      Follow me. @alan_t_wootton on X. I'm blogging about it there. I don't have time for much social media. I have a lot of work to do.
+      `
 
 // It's in markdown. 
 const helpTextOld = `
 
-#### This is a demo. Not THE Metaverse.
+      #### This is a demo. Not THE Metaverse.
 
-It's a proto of some 'The Metaverse' tech that I'm blogging on [X](https://x.com/alan_t_wootton) 
-while I'm developing it and if you didn't read that than this won't make any sense to you. RTFM baby.
-This is not The Metaverse. 🤓lol. Not yet.
+      It's a proto of some 'The Metaverse' tech that I'm blogging on [X](https://x.com/alan_t_wootton)
+      while I'm developing it and if you didn't read that than this won't make any sense to you. RTFM baby.
+      This is not The Metaverse. 🤓lol. Not yet.
 
-The source code is here [github](https://github.com/awootton/metaverse-proto-one), and I am blogging about the development process on 
-[X](https://x.com/alan_t_wootton). You ARE allowed to work on this. Take it away from me. I want you to. Tell your friends. Phone the neighbors.
+      The source code is here [github](https://github.com/awootton/metaverse-proto-one), and I am blogging about the development process on
+      [X](https://x.com/alan_t_wootton). You ARE allowed to work on this. Take it away from me. I want you to. Tell your friends. Phone the neighbors.
 
-This thing (image below) is meant to show a property that has been "bought" by someone. 
+      This thing (image below) is meant to show a property that has been "bought" by someone.
 
-A space, or property, is reserved (owned) by ***buying the Domain Name*** for it! You could buy the correct .xyz domain 
-and it would show up here. I'm giving out .vr domains for free to anyone who wants one through the tools at knotfree.net. 
-Just ask me on X if you want more than 8. Give me a ❤️.
+      A space, or property, is reserved (owned) by ***buying the Domain Name*** for it! You could buy the correct .xyz domain
+      and it would show up here. I'm giving out .vr domains for free to anyone who wants one through the tools at knotfree.net.
+      Just ask me on X if you want more than 8. Give me a ❤️.
 
-This is just the boundary box, but the idea is that the property will be rendered inside the box:
+      This is just the boundary box, but the idea is that the property will be rendered inside the box:
 
-![examplePropertyCube](/examplePropertyCube.png)
+      ![examplePropertyCube](/examplePropertyCube.png)
 
-There are instructions if you want to see yours shown here. Note that the "..." menu at the top has some other fun stuff in it like 
-an orbital view mode where you can visualize properties by entering their names.
+      There are instructions if you want to see yours shown here. Note that the "..." menu at the top has some other fun stuff in it like
+      an orbital view mode where you can visualize properties by entering their names.
 
-Note that the 'name' of the property, like an address, is written on the floor of the cubes.
+      Note that the 'name' of the property, like an address, is written on the floor of the cubes.
 
-The axis in the middle is 0 north, 0 east, 0 up. The nav controls are crap. They would be defined by your avatar which nobody has yet invented. 
-Shift reload this page to get the latest version.
-`
+      The axis in the middle is 0 north, 0 east, 0 up. The nav controls are crap. They would be defined by your avatar which nobody has yet invented.
+      Shift reload this page to get the latest version.
+      `
 
-
-// What was this for again?
-function processMessageAsFrame(event: any) {
-
-  if (!event || !event.data || !event.data.type) {
-    // return
-  }
-  //  webpackHotUpdate38887362502c69910bfe no thanks
-
-  if (!event.data.source?.includes("devtools") &&
-    !event.data.type?.includes("webpack") &&
-    !event.data.type?.startsWith("webpackHotUpdate")
-  ) {
-    console.log("App processMessageAsFrame got message", event.data);
-  }
-
-  const offscreenCanvas = event.data.canvas as OffscreenCanvas;
-  if (!offscreenCanvas) {
-    // console.error("App processMessageAsFrame no offscreenCanvas in message", event.data);
-    return;
-  }
-  console.log("App processMessageAsFrame got offscreenCanvas", offscreenCanvas);
-
-  // render(
-  //   <Canvas gl={{ canvas: offscreenCanvas, antialias: true }}>
-  //     {/* Your react-three-fiber scene components */}
-  //     <mesh>  use purple box
-  //       <boxGeometry />
-  //       <meshBasicMaterial color="hotpink" />
-  //     </mesh>
-  //   </Canvas>
-  // );
-}
-
-// if (window.addEventListener) {
-//   // For standards-compliant web browsers
-//   window.addEventListener("message", processMessageAsFrame, false);
-// }
-
-
-window.onmessage = function (event) {
-  // const offscreenCanvas = event.data.canvas as OffscreenCanvas;
-  // console.log("App onmessage got offscreenCanvas", offscreenCanvas);
-  processMessageAsFrame(event);
-};
-
-
-// function RotatingBoxGreen(props: {}) {
-
-//   const ref = useRef<THREE.Mesh>(null!)
-
-//   // useFrame((state, delta) => {
-//   //   ref.current.rotation.x += 0.04
-//   //   ref.current.rotation.y += 0.04
-
-//   //   // Object.assign(document, { "foreignScene": state.scene })
-//   //   // foreignScene = state.scene
-
-//   // })
-//   return (
-//     // <mesh ref={ref} {...props} >
-//     <mesh {...props} >
-//       <boxGeometry args={[1.5, 0.2, 1]} />
-//       <meshStandardMaterial color="green" />
-//     </mesh>
-//   )
-// }
-
-// function RotatingBoxPurple(props: {}) {
-
-//   const ref = useRef<THREE.Mesh>(null!)
-
-//   // useFrame((state, delta) => {
-//   //   ref.current.rotation.x += 0.04
-//   //   ref.current.rotation.y += 0.04
-
-//   //   // Object.assign(document, { "foreignScene": state.scene })
-//   //   // foreignScene = state.scene
-
-//   // })
-//   return (
-//     // <mesh ref={ref} {...props} >
-//     <mesh {...props} >
-//       <boxGeometry args={[1.5, 0.2, 1]} />
-//       <meshStandardMaterial color="orange" />
-//     </mesh>
-//   )
-// }
-
-// function ClickBox(props: MeshProps) {
-//   // This reference will give us direct access to the THREE.Mesh object
-//   const ref = useRef<THREE.Mesh>(null!)
-//   // Hold state for hovered and clicked events
-//   const [hovered, hover] = useState(false)
-//   const [clicked, click] = useState(false)
-//   // Rotate mesh every frame, this is outside of React without overhead
-//   useFrame((state, delta) => (ref.current.rotation.x += 0.01))
-
-//   return (
-//     <mesh
-//       {...props}
-//       ref={ref}
-//       scale={clicked ? 1.5 : 1}
-//       onClick={(event) => click(!clicked)}
-//       onPointerOver={(event) => hover(true)}
-//       onPointerOut={(event) => hover(false)}>
-//       <boxGeometry args={[1, 1, 1]} />
-//       <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
-//     </mesh>
-//   )
-// }
-
-
-{/* <iframe src="https://platform.twitter.com/widgets/tweet_button.html" ></iframe>
-<iframe src="https://platform.twitter.com/widgets/tweet_button.html" ></iframe>
-<iframe src="https://platform.twitter.com/widgets/tweet_button.html" ></iframe>
-<iframe src="https://platform.twitter.com/widgets/tweet_button.html" ></iframe>
-
-<iframe src="http://localhost:5173/index.html" ></iframe> */}
-{/* <iframe src="http://localhost:5173/index.html" ></iframe>  */ }
+      // Y'all gotta let me own a little someting here and there. 
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE

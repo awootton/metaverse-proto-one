@@ -4,7 +4,7 @@
 // import * as dns from "dns/promises"
 
 // import { sendNameserviceCommand } from "./sendTheCommand"
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import { sendNameserviceCommand, sendNameserviceCommandHarder } from "../knotfree-ts-lib/3d/NamesApi"
 import { GetTheKeys } from '../knotfree-ts-lib/3d/ReserveVrFunction'
 
@@ -35,7 +35,7 @@ console.log("isImage:")
 // test the knotfree sendNameserviceCommand api
 
 // excercise the knotfree.net API to reserve a name and create a world. 
-// it doesn't really create anything, See tryingToReserve.ts for that. This is just to test the API calls and get a feel for how it works.
+// it doesn't really create anything, *** See tryingToReserve.ts for that. *** This is just to test the API calls and get a feel for how it works.
 
 // command to execute: npx ts-node src/scripts/makeWorld.ts
 
@@ -79,6 +79,7 @@ async function doTheScript() {
 
     const groupTextParameters: oct.GroupTextParameters = {
         id: "TmWyJB7iiPiEvT1HsyuFz6pK", // they can all draw, and act, together.
+        master: "must-be-valid-cube-string", // this is the master node of the group. It must be a valid cube string. Set later.
         dbg: "localhost:3010",
         type: "floor",
         asset: "color:#545454" // a road color from the web.

@@ -3,14 +3,12 @@
 import * as THREE from 'three'
 import * as React from 'react'
 import { useRef, useState } from 'react'
-import { WorldDisplayState } from './WorldDisplayState'
 import { Canvas } from '@react-three/fiber'
 import { MainWorldDisplay, MainWorldDisplayProps } from './MainWorldDisplay'
 import * as nav1 from './NavigatorTest1'
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus'
-// import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
 import { Perf } from 'r3f-perf'
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import * as utils from '../knotfree-ts-lib/3d/utils'
 import { RootState, useFrame, useThree } from '@react-three/fiber'
 import * as pubsub from './PubSubTopicAndSubscribers'
@@ -19,20 +17,34 @@ import { AsyncChannel } from './AsyncChannel'
 
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes';
 import axios from 'axios';
-
+import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'
+import { OrbitControls } from '@react-three/drei';
 
 // 10 meters east and a little south, and 1.75 meters up, which is about eye level for an average person standing on the ground. 
 
 export const DefaultCameraPosition = new THREE.Vector3(-2, 1.75, 10);
 
 export type AppCanvasProps = {
-    state: WorldDisplayState
+    // What do you REALLY need? 
+
+    worldName: string
+
+    // let's add a camera position here.
+    initialCameraPosition: THREE.Vector3
+
+    // uniqueId: string it moves
+    onlyShowOutlineBoxes: boolean // x-ray 
+
+    showOriginAxis: boolean
+
     shouldShowMainWorldDisplay: boolean // turn the whole thing off when it's hidden.
-    showingLeaves: oct.TreeStatus[]
+    showingLeaves: oct.TreeStatus[] // add back later
 }
 
 // we have 3d we can have know the camera. We can trigger tree build and
 // publish.
+
+// Why can't this also be he orbit camvas? Only with different controls?
 
 export default function AppCanvas(props: AppCanvasProps) {
 
@@ -52,87 +64,255 @@ export default function AppCanvas(props: AppCanvasProps) {
 
     //const ourState = useRef<WorldDisplayState>(props.state)
 
-    if (!props.shouldShowMainWorldDisplay) {
-        return (
-            <div>
-                canvas turned off.
-            </div>
-        )
+    // if (!props.shouldShowMainWorldDisplay) {
+    //     return (
+    //         <div>
+    //             main world canvas turned off.
+    //         </div>
+    //     )
+    // }
+
+    const currentCameraPosition = new THREE.Vector3(-2, 1.75, 12);
+
+    function showNavInCanvas() {
+        if (props.shouldShowMainWorldDisplay) {
+            return (
+                <nav1.NavigationCamera cameraRef={cameraControlRef} />
+            )
+        }
     }
+    function showNavOutsizeCanvas() {
+        if (props.shouldShowMainWorldDisplay) {
+            return (
+                <nav1.NavigationControls1 cameraRef={cameraControlRef} />
+            )
+        }
+    }
+
+    function showShowOrbitalControlInCanvas() {
+        // where is the camera? 
+
+        const currentCameraPosition = new THREE.Vector3(-2, 1.75, 12);
+
+        const cam: [number, number, number] = [currentCameraPosition.x, currentCameraPosition.y, currentCameraPosition.z]
+
+        const size = 16
+
+        if (!props.shouldShowMainWorldDisplay) {
+            return (
+                <OrbitControls
+                    target={cam} // Set the target to the current camera position
+                    enableDamping={true} // Smooth stopping momentum
+                    dampingFactor={0.05}
+                    maxDistance={10 * size}     // Limit how far user can zoom out
+                    minDistance={0.5 * size}      // Limit how far user can zoom in
+                    maxPolarAngle={Math.PI / 2} // Prevent looking underneath the ground
+                />
+            )
+        } else {
+            return null
+        }
+    }
+
     return (
         <>
             <Canvas id="canvas"
-                camera={{ position: props.state.currentCameraPosition }}
+                camera={{ position: currentCameraPosition }}
                 style={{ backgroundColor: '#cfecf7' }}
             >
-
                 <AppCanvasInTheCanvas {...props} />
 
-                <nav1.NavigationCamera cameraRef={cameraControlRef} />
+                {/* <nav1.NavigationCamera cameraRef={cameraControlRef} /> */}
+                {showNavInCanvas()}
+
+                {showShowOrbitalControlInCanvas()}
 
             </Canvas >
 
-            <nav1.NavigationControls1 cameraRef={cameraControlRef} />
+            {/* <nav1.NavigationControls1 cameraRef={cameraControlRef} /> */}
+            {showNavOutsizeCanvas()}
         </>
     )
 }
 
+let starttime = Date.now() - 8 * 1000 // start in 2 sec
+
 function AppCanvasInTheCanvas(props: AppCanvasProps) {
 
-    const ourState = useRef<WorldDisplayState>(props.state)
+    // const ourState = useRef<WorldDisplayState>(props.state)
+    // what do we really need? We need the world name, and the unique id, and the onlyShowOutlineBoxes, and the showOriginAxis. That's it. The rest is local state.
+    // it's in the props though. 
 
     let theCameraPosition: [number, number, number] = [0, 1.75, 0]
     let farClip = 4000
 
+    // let previousCameraPosition = new THREE.Vector3(1e999, 0, 0)
+    let timeWhenWeWillRecalc = Date.now()
+    let [previousCameraPosition, setPreviousCameraPosition] = useState<THREE.Vector3>(new THREE.Vector3(1e999, 0, 0));
+
     // I presume this state is the one from the current canvas.
+    // tris is triggering all the damn time. 
     useFrame((state: RootState, delta: number) => {
 
-        // This is the logic on when to trigger a tree traversal. 
-        // I'm not sure I like it. 
-        const camera = state.camera
-
-        camera.far = 5000; // Set your desired distance
-        camera.updateProjectionMatrix(); // Critical: Update Three.js matrix
-
-        theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
-        farClip = camera.far
-
-        ourState.current.currentCameraPosition.copy(camera.position)
-
-        const distanceMoved = camera.position.distanceTo(ourState.current.previousCameraPosition)
-        if (distanceMoved > 1) {
-
-            // console.log("previousCameraPosition : ", ourState.current.previousCameraPosition, "Camera position: ", camera.position, "Distance moved: ", distanceMoved)
-            // console.log("Camera moved more than 1 meter. Distance moved: ", distanceMoved)
-            ourState.current.previousCameraPosition.copy(camera.position)
-            // trigger tree traversal and update cubes to render here.
-            const timestamp: number = Date.now();
-            const deltaTime = timestamp - ourState.current.timeSinceLastCameraMovement
-            if (deltaTime > 250) {
-                // console.log("It's been more than 250 ms since the last tree traversal. Triggering new tree traversal.")
-                ourState.current.timeSinceLastCameraMovement = timestamp
-                // trigger tree traversal and update cubes to render here.
-                // and, here we go.
-                // console.log("MainWorldDisplay" + ourState.current.uniqueId + ". Triggering new tree traversal.")
-
-                // TraverseTheTree(ourState.current.worldName, camera.position, ourState.current);
-                const cameraPosition = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z)
-                const somestate: WorldDisplayState = ourState.current
-
-                ReqularTraversalSetup(props.state)
-
-            } else {
-            }
+        let doTheRecalc = false
+        const endTime = Date.now()
+        const passed_time = endTime - starttime
+        if (passed_time > 10 * 1000) {
+            starttime = Date.now()
+            doTheRecalc = true
         } else {
-            // reset the timer? no, then it would never trigger if the camera is moving slowly. 
-            // timeSinceLastCameraMovement = Date.now()
+            return
         }
+        if (doTheRecalc) {
 
-        // console.log("delta: ", delta, "Camera position: ", camera.position)
-        // Called every frame
-        // const camera = state.camera
-        // console.log("Camera position: ", camera.position)
+            console.log("TIME to recalc!!!: ")
 
+            // should we force a draw another way?
+            // let's setup the camera far clip to be 5000.
+            const camera = state.camera
+            camera.far = 5000; // Set your desired distance
+            camera.updateProjectionMatrix(); // Critical: Update Three.js matrix
+            doTheRecalc = true
+
+            // more logic in here...
+
+            if (doTheRecalc) {
+                const camera = state.camera
+
+                theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
+                farClip = camera.far
+
+                let ourCameraPosition: THREE.Vector3 = camera.position.clone()
+
+                // j/k console.log("It's been more than 250 epoc since the last tree traversal. Triggering new tree traversal.")
+                // this is too complicated. What's happeneing?
+                //         type neededstate = {
+                //             worldName: string
+                //             //  uniqueId: string
+                //             onlyShowOutlineBoxes: boolean
+                //             showOriginAxis: boolean // why????
+                //         }
+                //         const somestate: neededstate = {
+                //             worldName: props.worldName,
+                //             //    uniqueId: props.uniqueId,
+                //             onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
+                //             showOriginAxis: props.showOriginAxis why??
+                //         }
+
+                const args: ReqularTraversalSetupProps = {
+                    worldName: props.worldName,
+                    currentCameraPosition: camera.position.clone(),
+                    // state: somestate,
+                    worker: () => { }
+                }
+
+                ReqularTraversalSetup(args)
+
+                // TraverseTheTree(props.worldName, camera.position, ourState.current);
+
+
+                //         timeSinceLastCameraMovement = timestamp
+                //         // trigger tree traversal and update cubes to render here.
+                //         // and, here we go.
+                //     // console.log("MainWorldDisplay" + ourState.current. uniqueId + ". Triggering new tree traversal.")
+
+                //    TraverseTheTree(props.worldName, camera.position, ourState.current);
+
+                //         const cameraPosition = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z)
+
+                //         // const somestate: WorldDisplayState = ourState.current
+                //         type neededstate = {
+                //             worldName: string
+                //             //  uniqueId: string
+                //             onlyShowOutlineBoxes: boolean
+                //             showOriginAxis: boolean
+                //         }
+                //         const somestate: neededstate = {
+                //             worldName: props.worldName,
+                //             //    uniqueId: props.uniqueId,
+                //             onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
+                //             showOriginAxis: props.showOriginAxis
+                //         }
+
+                //         const args: ReqularTraversalSetupProps = {
+                //             worldName: somestate.worldName,
+                //             currentCameraPosition: camera.position.clone(),
+                //             // state: somestate,
+                //             worker: () => { }
+                //         }
+
+                //         ReqularTraversalSetup(args)
+
+                return
+            }
+
+            // let timeSinceLastCameraMovement = now
+
+            // // This is the logic on when to trigger a tree traversal. 
+            // // I'm not sure I like it. 
+            // const camera = state.camera
+            // camera.far = 5000; // Set your desired distance
+            // camera.updateProjectionMatrix(); // Critical: Update Three.js matrix
+
+            // theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
+            // farClip = camera.far
+
+            // props.initialCameraPosition.copy(camera.position)
+
+            // const distanceMoved = camera.position.distanceTo(previousCameraPosition)
+            // if (distanceMoved > 1) {
+
+            //     // console.log("previousCameraPosition : ", ourState.current.previousCameraPosition, "Camera position: ", camera.position, "Distance moved: ", distanceMoved)
+            //     // console.log("Camera moved more than 1 meter. Distance moved: ", distanceMoved)
+            //     previousCameraPosition.copy(camera.position)
+            //     // trigger tree traversal and update cubes to render here.
+            //     const timestamp: number = Date.now();
+            //     const deltaTime = timestamp - timeSinceLastCameraMovement
+            //     if (deltaTime > 250) {
+            //         // console.log("It's been more than 250 ms since the last tree traversal. Triggering new tree traversal.")
+            //         timeSinceLastCameraMovement = timestamp
+            //         // trigger tree traversal and update cubes to render here.
+            //         // and, here we go.
+            //         // console.log("MainWorldDisplay" + ourState.current. uniqueId + ". Triggering new tree traversal.")
+
+            // no           TraverseTheTree(ourState.current.worldName, camera.position, ourState.current);
+            //         const cameraPosition = new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z)
+
+            //         // const somestate: WorldDisplayState = ourState.current
+            //         type neededstate = {
+            //             worldName: string
+            //             //  uniqueId: string
+            //             onlyShowOutlineBoxes: boolean
+            //             showOriginAxis: boolean
+            //         }
+            //         const somestate: neededstate = {
+            //             worldName: props.worldName,
+            //             //    uniqueId: props.uniqueId,
+            //             onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
+            //             showOriginAxis: props.showOriginAxis
+            //         }
+
+            //         const args: ReqularTraversalSetupProps = {
+            //             worldName: somestate.worldName,
+            //             currentCameraPosition: camera.position.clone(),
+            //             // state: somestate,
+            //             worker: () => { }
+            //         }
+
+            //         ReqularTraversalSetup(args)
+
+            //     } else {
+            //     }
+            // } else {
+            //     // reset the timer? no, then it would never trigger if the camera is moving slowly. 
+            //     // timeSinceLastCameraMovement = Date.now()
+            // }
+
+            // console.log("delta: ", delta, "Camera position: ", camera.position)
+            // Called every frame
+            // const camera = state.camera
+            // console.log("Camera position: ", camera.position)
+        }
     })
 
     {/* <Stats /> */ }
@@ -152,9 +332,29 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
             {/* <Backdrop /> */}
             {/* <Backcube position={theCameraPosition} farClip={farClip} /> */}
 
-            <MainWorldDisplay state={props.state}
+            <MainWorldDisplay
+
+                // clean up this trash please.
+                //   worldName: string // like a traditional at this point.
+                //   // Everyone passes it and nobody uses it. 
+                //   uniqueId: string
+                //   onlyShowOutlineBoxes: boolean
+                //   showOriginAxis: boolean
+
+                //   showingLeaves: oct.TreeStatus[]
+                //   // add demo spaces here too.? No we get them from storage.
+                //  indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
+
+                //   // add demo spaces here too.? No we get them from storage.
+                //   indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
+                // what do we really NEED here?
+                worldName={props.worldName}
+                //   uniqueId={props.uniqueId}
+                onlyShowOutlineBoxes={props.onlyShowOutlineBoxes}
+                showOriginAxis={props.showOriginAxis}
                 showingLeaves={props.showingLeaves}
-                indexBase={1}
+              //  indexBase={1000}
+
             />
         </>
     )
@@ -238,39 +438,67 @@ async function getChildBitsCachedAllFromServer(worldName: string): Promise<strin
     return rawLargeString;
 }
 
+type TraversalRunnerStateArg = {
+    worldName: string
+    currentCameraPosition: THREE.Vector3
+    // state: WorldDisplayState,
+    // worker: () => any
+}
+
 export type TraversalRunnerStruct = {
-    runner_state: WorldDisplayState,
+    runner_state: TraversalRunnerStateArg,
     worker: () => any
 };
 
 const traverseTreeChannel = new AsyncChannel<TraversalRunnerStruct>();
 
 // Will these just run or do I have to pull them?
+// what do they REALLY need
 
-export function ReqularTraversalSetup(state: WorldDisplayState) {
+type ReqularTraversalSetupProps = {
+    worldName: string
+    currentCameraPosition: THREE.Vector3
+    // state: WorldDisplayState,
+    worker: () => any
+};
+
+export function ReqularTraversalSetup(args: ReqularTraversalSetupProps) {
     const task: TraversalRunnerStruct = {
-        runner_state: state,
+        runner_state: args,
         worker: async () => {
 
             // console.log("ReqularTraversalSetup called. ")
 
-            await localTraverseTheTree(task.runner_state.worldName, task.runner_state.currentCameraPosition, task.runner_state)
+            await localTraverseTheTree(task.runner_state.worldName, task.runner_state.currentCameraPosition)
         }
     };
     traverseTreeChannel.send(task);
 }
 
-export function StartLoadFromDbAndRun(state: WorldDisplayState) {
+// What do we really need? 
+// this is how App boots up the tree traversal. It will fetch the child bits from the server, fill the cache, and then trigger a tree traversal.
+
+type StartLoadFromDbAndRunStruct = {
+    worldName: string
+    currentCameraPosition: THREE.Vector3
+    worker: () => any
+};
+
+export function StartLoadFromDbAndRun(props: StartLoadFromDbAndRunStruct) {
 
     // console.log("StartLoadFromDbAndRun called. StartLoadFromDbAndRun called. StartLoadFromDbAndRun called. ")
 
     const task: TraversalRunnerStruct = {
-        runner_state: state,
+        runner_state: props,
         worker: async () => {
 
             const rawLargeString = await getChildBitsCachedAllFromServer(task.runner_state.worldName);
             // now we have the string. Let's fill the cache and then traverse the tree.
 
+            if (!rawLargeString || rawLargeString.length === 0) {
+                console.error("StartLoadFromDbAndRun: No data received from server for world: ", task.runner_state.worldName);
+                return;
+            }
             // console.log("StartLoadFromDbAndRun called. We have the cache. ", rawLargeString.length)
 
             const parsed = JSON.parse(rawLargeString);
@@ -284,13 +512,13 @@ export function StartLoadFromDbAndRun(state: WorldDisplayState) {
             oct.SetTheWholeChildBitsLocalCache(cacheEntries2);
             // console.log("child bits entries count: ", cacheEntries2.size)
             // why wait ? await 
-            localTraverseTheTree(task.runner_state.worldName, task.runner_state.currentCameraPosition, task.runner_state)
+            localTraverseTheTree(task.runner_state.worldName, task.runner_state.currentCameraPosition)
         }
     };
     traverseTreeChannel.send(task);
 }
 
-// Have to pull them!  
+// Have to pull them!  Yes, this is how we must pull them.
 async function runTraversalTasks() {
     for await (const task of traverseTreeChannel) {
 
@@ -323,28 +551,33 @@ runTraversalTasks(); // Start the async loop to process tasks
 // note that TraverseTheTree orders up a traversal but doesn't wait. 
 // When it's done it will publish a "ShowingLeavesChanges" event with the new cubes to render.
 
-async function localTraverseTheTree(worldName: string, position: THREE.Vector3, state: WorldDisplayState) {
+async function localTraverseTheTree(worldName: string, position: THREE.Vector3) {
 
     // console.log("TraverseTheTree called. TraverseTheTree called. TraverseTheTree called. Traversing the tree and updating cubes to render. position: ", position, "worldName: ", worldName)
 
+
     // is it worth detecting that the leaf list is the same?
     // let's try it. 
-    const setOfLeavesBefore = new Set(state.theGlobalTree.showingLeaves.keys())
+    // const setOfLeavesBefore = new Set(state.theGlobalTree.showingLeaves.keys())
 
+    // await treeGenerator.BuildVisibleTree(worldName, position)
+    // const showingLeaves = treeGenerator.showingLeaves.values()
     // I was always curious if the keys match the names in the values. ?
-    for (const [key, value] of state.theGlobalTree.showingLeaves.entries()) {
-        if (key !== value.name) {
-            console.info("TraverseTheTree: Did not expect that. key and value.name do not match. key: ", key, " value.name: ", value.name)
-        }
-    }
+    // for (const [key, value] of showingLeaves.entries()) {
+    //     if (key !== value.name) {   
+    //         console.info("TraverseTheTree: Did not expect that. key and value.name do not match. key: ", key, " value.name: ", value.name)
+    //     }
+    // }
+
+    const treeGenerator = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
 
     var err: Error | null = null
     const startTime = Date.now()
-    const errPromise = state.theGlobalTree.BuildVisibleTree(worldName, position)
+    const errPromise = treeGenerator.BuildVisibleTree(worldName, position)
     err = await errPromise
     const endTime = Date.now()
 
-    console.log("Time taken for TraverseTheTree: ", endTime - startTime, "ms. Leaves found=", state.theGlobalTree.showingLeaves.size)
+    console.log("Time taken for TraverseTheTree: ", endTime - startTime, "ms. Leaves found=", treeGenerator.showingLeaves.size)
     // after the first one it's saying 0 ms. Which is correct. It's actually about 0.1
 
     if (err != null) {
@@ -361,13 +594,14 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3, 
 
         // console.log("Cache: ", myMapCacheIntf.keys())
 
-        const setOfLeavesAfter = new Set(state.theGlobalTree.showingLeaves.keys())
-        if (setOfLeavesAfter.size === setOfLeavesBefore.size && Array.from(setOfLeavesAfter).every(leaf => setOfLeavesBefore.has(leaf))) {
-            // console.log("TraverseTheTree: The set of leaves is the same as before. No need to publish changes.")
-            return
-        } else {
-            // console.log("TraverseTheTree: The set of leaves has changed. Publishing changes.")
-        }
+        // const setOfLeavesAfter = new Set(state.theGlobalTree.showingLeaves.keys())
+        // if (setOfLeavesAfter.size === setOfLeavesBefore.size && Array.from(setOfLeavesAfter).every(leaf => setOfLeavesBefore.has(leaf))) {
+        //     // console.log("TraverseTheTree: The set of leaves is the same as before. No need to publish changes.")
+        //     // the problem I', having with this sometimes is that it shows nothng. It's unreleable. I think it's because the cache is not filled yet. So it finds nothing. Then later it finds something.
+        //     //return
+        // } else {
+        //     // console.log("TraverseTheTree: The set of leaves has changed. Publishing changes.")
+        // }
 
         // this is the result: 
         // console.log("TraverseTheTree Visible cubes: ", state.theGlobalTree.showingLeaves)
@@ -376,7 +610,7 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3, 
         // too long to log: console.log("TraverseTheTree publishing ShowingLeavesChanges ", keyList.join(","))
 
         // This little fucker will let you publish the wrong type! 
-        const leavesToPublish: oct.TreeStatus[] = Array.from(state.theGlobalTree.showingLeaves.values())
+        const leavesToPublish: oct.TreeStatus[] = Array.from(treeGenerator.showingLeaves.values())
         pubsub.publish("ShowingLeavesChanges", leavesToPublish)
         pubsub.publish("LoadingMessage", "We good.")
         // we must also inform the keeper of the Iframes. eeewww

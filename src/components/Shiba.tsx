@@ -16,7 +16,7 @@ import AtwBox from "./OriginAxisDisplay";
 import { CameraWalker } from "./CameraWalker";
 import { TextureLoader, BackSide } from "three"
 import { useTexture, useGLTF } from "@react-three/drei";
-import * as oct from "../knotfree-ts-lib/3d/UrlOctTree"
+import * as oct from "../knotfree-ts-lib/3d/DomainNameOctTree"
 
 import { Text } from '@react-three/drei';
 

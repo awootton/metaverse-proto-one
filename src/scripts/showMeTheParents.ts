@@ -1,4 +1,4 @@
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 
 
 // also test FromXToY

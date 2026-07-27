@@ -4,14 +4,16 @@ import * as THREE from 'three';
 
 // what does useMemo do?
 import React, { Suspense, useRef } from 'react';
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree';
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 import { Edges } from '@react-three/drei';
-import { useTexture, useGLTF } from '@react-three/drei';
+import { useTexture } from '@react-three/drei';
 import RewriteUrl from './RewriteUrl';
 import { OutlineBoxComponent } from './OutlineBoxComponent'
 import * as leaves from './LeafRenderingComponent'
-import { WorldDisplayState } from './WorldDisplayState';
-import { BatchInfo } from './MakeBoxesForShowingLeaves';
+// import { WorldDisplayState } from './WorldDisplayState';
+import { BatchInfo } from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import { AuxLeafStatus } from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import { ThingWithAux } from './LeafRenderingGlb';
 
 export type LeafRenderingComponentProps = {
     treeStatus: oct.TreeStatus
@@ -19,12 +21,23 @@ export type LeafRenderingComponentProps = {
     groupInfo: oct.GroupTextParameters // let's also know this always.
 }
 
+export type MakeBoxesForDemoSpacesPropsAux = {
+    //worldDisplayState: WorldDisplayState
+
+    worldName: string
+
+    aux: AuxLeafStatus
+   // indexBase: number // worst feature EVER.
+}
+
+
 // CubeWithEdges is the most basic, fallback rendering of a leaf. It just draws a box with edges. 
 // It doesn't use any textures or glbs or colors. It's just a box with edges. It's used as a fallback when we can't load the texture or glb for some reason.
 // We hope to NEVER see it. It's not a fast way.
 export type CubeWithEdgesProps = {
     cube: oct.Cube,
-    index: number // it's picky about this stuff.
+    // a cube ALREADY has unique name.
+  //  index: number // it's picky about this stuff.
 }
 export function CubeWithEdges(props: CubeWithEdgesProps) {
     const cube = props.cube
@@ -64,11 +77,11 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
 
     let baseUrl = "http://" + props.treeStatus.name
     const treeStatus = props.treeStatus
-    if (treeStatus.wasXYZ) {
-        baseUrl += ".xyz"
-    } else {
-        baseUrl += ".vr"
-    }
+    // if (treeStatus.wasXYZ) {
+    //     baseUrl += ".xyz"
+    // } else {
+    //     baseUrl += ".vr"
+    // }
 
     const groupInfo: oct.GroupTextParameters = treeStatus.groupId as oct.GroupTextParameters
 
@@ -241,13 +254,37 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
                         <ThingWithTexture treeStatus={props.treeStatus} groupInfo={props.groupInfo} />
                     </Suspense>
                 )
-            } else if (asset.match(/\.(glb|gltf)$/)) {
-                return (
-                    <Suspense fallback={<CubeWithEdges />}>
-                        <ThingWithGlb {...props} />
-                    </Suspense>
-                )
-            } else {
+            }   
+               // I really need to throw out some of this trash.
+                // why is this here? Why not in batches?
+                //              
+            //     if (asset.match(/\.(glb|gltf)$/)) {
+            //     return (
+            //         <Suspense fallback={<CubeWithEdges />}>
+
+            //             const ourprops: ThingWithAuxProps = {
+                        
+            //                             worldName: props.worldName,
+            //                             // uniqueId: props.uniqueId,
+            //                             onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
+            //                             showOriginAxis: props.showOriginAxis,
+            //                             // previousCameraPosition: props.state.previousCameraPosition,
+            //                             // timeSinceLastCameraMovement: props.state.timeSinceLastCameraMovement,
+            //                             // theGlobalTree: props.state.theGlobalTree,    
+                        
+            //                             aux: auxRecord,
+            //                             indexBase: keyIndex,
+            //                             groupTxt: groupTextParameters
+            //                         }
+
+            //             <ThingWithAux {
+
+                            
+            //                 } />
+            //         </Suspense>
+            //     )
+            // } else 
+            {
                 console.log("Unknown asset type for leaf ", props.treeStatus.name, " asset is ", asset)
                 return <CubeWithEdges />
             }
@@ -263,7 +300,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
                 color={"blue"}
                 forceChainLink={true}
                 // key={99}
-                indexBase={99}
+           //     indexBase={99}
             />
         }
     }
@@ -276,7 +313,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
     )
 }
 
-
+// This is a single cube.
 export function ThingWithColor(props: LeafRenderingComponentProps) {
 
     // const [tries, setTries] = React.useState(0)
@@ -308,6 +345,7 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
     if (props.groupInfo.type === "floor") {
         return (
             <mesh
+            key={props.treeStatus.name} 
                 position={centerBottom}
                 rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
             >
@@ -322,6 +360,7 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
     if (props.groupInfo.type === "ceiling") {
         return (
             <mesh
+                key={props.treeStatus.name}
                 position={centerTop}
                 rotation={[Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
             >
@@ -333,9 +372,9 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
             </mesh>
         )
     }
-    return ( // othetwise the whole cube. No problem. Except for the shrinkage.
+    return ( // otherwise the whole cube. No problem. Except for the shrinkage.
         <>
-            <mesh
+            <mesh key={props.treeStatus.name}
                 position={center}
             >
                 <boxGeometry
@@ -345,7 +384,7 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
 
             </mesh>
 
-            <leaves.CubeWithEdges cube={props.treeStatus.cube} index={30000} />
+            <leaves.CubeWithEdges cube={props.treeStatus.cube} key={props.treeStatus.name} />
         </>
     );
 }
@@ -356,7 +395,9 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
 // I would like to skip the ones behind me but hen I would have to recalc every camera move.
 
 
-// export type GroupInfo = {
+// export type GroupInfo = BatchInfo
+
+// {
 //     masterName: string
 //     type: string
 //     asset: string
@@ -364,12 +405,23 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
 //     leaves: oct.TreeStatus[]
 // }
 
+// export type BatchInfo = {
+//     masterName: string // HAVE tld.
+//     type: string
+//     asset: string
+//     groupInfo: oct.GroupTextParameters
+//     leaves: oct.TreeStatus[]
+//     auxRecord: oct.AuxLeafStatus | null // overrides the asset and the type.
+// }
+
 
 // these are really for other uses with batches of cubes 
+
+
 export type MakeBoxesForDemoSpacesProps = {
-    worldDisplayState: WorldDisplayState
+    // worldDisplayState: WorldDisplayState
+    worldName: string
     groupInfo: BatchInfo
-    indexBase: number // worst feature EVER.
 }
 
 // This one is for when the asset is a color are the type is floor or ceiling. 
@@ -377,9 +429,9 @@ export type MakeBoxesForDemoSpacesProps = {
 export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
     const treeStatusList = props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
-    const worldDisplayState = props.worldDisplayState
+    //const worldDisplayState = props.worldDisplayState
     const groupInfo = props.groupInfo
-    const indexBase = props.indexBase
+    // const indexBase = props.indexBase
     const asset = props.groupInfo.asset
     // parse out color:cname or color:#rrggbb
     let color = "white"
@@ -468,6 +520,11 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
     geometry.computeVertexNormals();
 
+    if ( ! oct.VerifyCubeName(props.groupInfo.masterName)) {
+        console.log("MakeBoxesForColorGroup: ", props.groupInfo.masterName, " this may work poorly")
+        return null
+    }
+
     // return (
     //     <>
     //         <mesh args={[geometry, material]} key={props.indexBase}>
@@ -477,71 +534,131 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
     return (
         <>
-            <instancedMesh args={[geometry, material, cubeList.length]} key={props.indexBase}>
+            <instancedMesh args={[geometry, material, cubeList.length]} key={props.groupInfo.masterName}>
             </instancedMesh>
         </>
     )
 }
 
-// FIXME: group the things with the same texture (and id) and draw them all at once. This will be more efficient than drawing each one separately. We can do this by creating a map of texture to list of cubes, and then drawing each list of cubes with the same texture in one go.
-// for now, just draw the glb ones one at a time
-export function ThingWithGlb(props: LeafRenderingComponentProps) {
+// type ThingWithGlbProps = {
+//     props: LeafRenderingComponentProps,
+//     indexBase: number
+// }
 
-    const groupInfo = props.groupInfo
-    const indexBase = 1234
-    let baseUrl = "http://" + props.treeStatus.name
-    const treeStatus = props.treeStatus
-    if (treeStatus.wasXYZ) {
-        baseUrl += ".xyz"
-    } else {
-        baseUrl += ".vr"
-    }
-    const cube = props.treeStatus.cube
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
-    const width = (2 ** cube.p)
-    const size = width
+// // FIXME: group the things with the same texture (and id) and draw them all at once. This will be more efficient than drawing each one separately. We can do this by creating a map of texture to list of cubes, and then drawing each list of cubes with the same texture in one go.
+// // for now, just draw the glb ones one at a time
+// export function ThingWithGlb({props, indexBase}: ThingWithGlbProps) {
 
-    let asset = groupInfo.asset
+//     const groupInfo = props.groupInfo
+//     let baseUrl = "http://" + props.treeStatus.name
+//     const treeStatus = props.treeStatus
+//     if (treeStatus.wasXYZ) {
+//         baseUrl += ".xyz"
+//     } else {
+//         baseUrl += ".vr"
+//     }
+//     const cube = props.treeStatus.cube
+//     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+//     const width = (2 ** cube.p)
+//     const size = width
 
-    let glbUrl = baseUrl + "/" + asset
+//     let asset = groupInfo.asset
 
-    const forceRemote = false
-    glbUrl = RewriteUrl(glbUrl, groupInfo, treeStatus, forceRemote)
+//     let glbUrl = baseUrl + "/" + asset
 
-    console.log("ThingWithGlb glbUrl ", glbUrl, "remote URL will be ", glbUrl)
+//     const forceRemote = false
+//     glbUrl = RewriteUrl(glbUrl, groupInfo, treeStatus, forceRemote)
 
-    const adjustment = 0.1
+//     // console.log("ThingWithGlb glbUrl ", glbUrl, "remote URL will be ", glbUrl)
 
-    const centerBottom: [number, number, number] = [center[0], center[1] - size / 2 + adjustment, center[2]]
+//     const adjustment = 0.1
 
-    // FIXME - use the actual asset url, and make sure it's a glb url.
-    let glb;
-    try {
-        const { scene } = useGLTF(glbUrl);
-        return (
-            <>
-                {/* <mesh
-                    position={centerBottom}
-                   // rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
-                > */}
-                <primitive object={scene} position={centerBottom} />
-                {/* </mesh> */}
-            </>
-        );
-    } catch (e) {
-        // should we announce this? 
-        console.log("Failed to load GLB:", glbUrl, e)
-        // we should have a version of this with a big "error" sign posted at eye level. TODO:
-        // I'm getting this with a glbUrl that works, and will eventually load.
-        // what do I do in the meantime? 
-        // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
-        // setTimeout(() => {
-        //     setTries(tries + 1)
-        // }, 30000)
+//     const centerBottom: [number, number, number] = [center[0], center[1] - size / 2 + adjustment, center[2]]
 
-        return <CubeWithEdges cube={cube} index={indexBase + 100} />
-    }
-}
+//     // FIXME - use the actual asset url, and make sure it's a glb url.
+//     let glb;
+//     try {
+//         const { scene } = useGLTF(glbUrl);
+//         return (
+//             <>
+//                 {/* <mesh
+//                     position={centerBottom}
+//                    // rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
+//                 > */}
+//                 <primitive object={scene} position={centerBottom} key={indexBase} />
+//                 {/* </mesh> */}
+//             </>
+//         );
+//     } catch (e) {
+//         // should we announce this? 
+//         console.log("Failed to load GLB:", glbUrl, e)
+//         // we should have a version of this with a big "error" sign posted at eye level. TODO:
+//         // I'm getting this with a glbUrl that works, and will eventually load.
+//         // what do I do in the meantime? 
+//         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
+//         // setTimeout(() => {
+//         //     setTries(tries + 1)
+//         // }, 30000)
+
+//         return <CubeWithEdges cube={cube} index={indexBase} key={indexBase} />
+//     }
+// }
+
+
+// type ThingWithAuxGlbProps = {
+//     props: LeafRenderingComponentProps,
+//     aux: oct.AuxTreeStatus
+//     indexBase: number
+// }
+
+
+// export function ThingWithAuxGlb( props: ThingWithAuxGlbProps) {
+
+//     const groupInfo = props.props.groupInfo
+
+//     const cube = props.props.treeStatus.cube
+//     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+//     const width = (2 ** cube.p)
+//     const size = width
+
+//     const aux = props.aux
+
+//     // console.log("ThingWithGlb glbUrl ", glbUrl, "remote URL will be ", glbUrl)
+
+//     const adjustment = 0.1
+
+//     const centerBottom: [number, number, number] = [center[0], center[1] - size / 2 + adjustment, center[2]]
+
+//     // FIXME - use the actual asset url, and make sure it's a glb url.
+//     let glb;
+//     try {
+//         const { scene } = useGLTF(aux.glbBlob);
+//         return (
+//             <>
+//                 {/* <mesh
+//                     position={centerBottom}
+//                    // rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
+//                 > */}
+//                 <primitive object={scene} position={centerBottom} key={props.indexBase} />
+//                 {/* </mesh> */}
+//             </>
+//         );
+//     } catch (e) {
+//         // should we announce this? 
+//         console.log("Failed to load GLB: from aux", aux, e)
+//         // we should have a version of this with a big "error" sign posted at eye level. TODO:
+//         // I'm getting this with a glbUrl that works, and will eventually load.
+//         // what do I do in the meantime? 
+//         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
+//         // setTimeout(() => {
+//         //     setTries(tries + 1)
+//         // }, 30000)
+
+//         return <CubeWithEdges cube={cube} index={props.indexBase} key={props.index Base} />
+//     }
+// }
+
+
 
 // This one is for when the asset has a texture and the type is floor or ceiling.
 // we prepare a batch of lines for all the cubes in the group and draw them all at once. This is much faster than drawing each cube separately.
@@ -549,9 +666,9 @@ export function ThingWithGlb(props: LeafRenderingComponentProps) {
 export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
     const treeStatusList = props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
-    const worldDisplayState = props.worldDisplayState
+    // const worldDisplayState = props.worldDisplayState
     const groupInfo = props.groupInfo
-    const indexBase = props.indexBase
+   // const index Base = props.index Base
     let asset = props.groupInfo.asset
 
     // if it ends with :repeat:N then parse that out and use it to repeat the texture.
@@ -587,10 +704,10 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
     let texture;
     try {
         texture = useTexture(textureUrl)
-        console.log("MakeBoxesForTextureGroup using normal texture for ", textureUrl)
+        // console.log("MakeBoxesForTextureGroup using normal texture for ", textureUrl)
 
     } catch (e) {
-        console.log("Failed to load texture:", textureUrl)
+        // console.log("Failed to load texture:", textureUrl)
         // we should have a version of this with a big "error" sign posted at eye level. TODO:
         // I'm getting this with a textureUrl that works, and will eventually load.
         // what do I do in the meantime? 
@@ -601,13 +718,13 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
         // const ourprops = {
         //     worldDisplayState: props.worldDisplayState,
         //     groupInfo: props.groupInfo,
-        //     indexBase: props.indexBase + 1234
+        //     index Base: props.index Base + 1234
         // }
         // violet means texture failed to load. We should have a better fallback texture that is local and always works.
         // return <MakeBoxesForColorGroup {...ourprops} groupInfo={{ ...ourprops.groupInfo, asset: "color:violet" }} />
 
         texture = textureBackup
-        console.log("MakeBoxesForTextureGroup using backup texture for ", textureLoadingPath)
+        // console.log("MakeBoxesForTextureGroup using backup texture for ", textureLoadingPath)
     }
 
     // TODO: get fallback texture that always works. Maybe a local one. 
@@ -723,7 +840,207 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
     return (
         <>
-            <instancedMesh args={[geometry, material, cubeList.length]} key={props.indexBase}>
+            <instancedMesh args={[geometry, material, cubeList.length]} key={props.groupInfo.masterName}>
+            </instancedMesh>
+        </>
+    )
+}
+
+
+// Same as above except takes an AuxTreeStatus instead of a group . This is for when we have a glb or texture that is not in the main tree but is in an aux tree.	
+export function MakeBoxesForTextureGroup2(props: MakeBoxesForDemoSpacesPropsAux) {
+
+    const [masterCube,err] = oct.StringToCube(props.aux.wholeMaster)
+    if (err) {
+        console.log("MakeBoxesForTextureGroup2: oops ", props.aux.wholeMaster, " error: ", err)
+        return null
+    }
+    if (! oct.VerifyCubeName(props.aux.wholeMaster)) {
+        console.log("MakeBoxesForTextureGroup2: oops ", props.aux.wholeMaster, " is not a valid cube name")
+        return null
+    }
+
+    const treeStatusList = []//props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
+    for (const auxaddress of props.aux.leaves) {
+        treeStatusList.push(masterCube.world + "-" + auxaddress)
+    }
+    // const worldDisplayState = props.worldDisplayState
+    //const groupInfo = props.groupInfo
+    //let asset = props.aux.backupTextureUrl
+
+    // if it ends with :repeat:N then parse that out and use it to repeat the texture.
+    let repeat = props.aux.oldeTxtJunk?.repeat || 1
+
+    let baseUrl = "http://" + props.aux.wholeMaster
+    let textureUrl = baseUrl + "/" + (props.aux.oldeTxtJunk?.textureUrl || "street.jpg")
+
+    const forceRemote = false
+    const ts = oct.GetTreeStatusFromCache(masterCube.world + "-" + props.aux.leaves[0])
+    if (!ts) {
+        console.log("MakeBoxesForTextureGroup2: failed to find treeStatus for aux leaf ", props.aux.leaves[0], " in world ", masterCube.world)
+        return null
+    }
+    const groupInfo = ts.groupId
+    if (!groupInfo) {
+        console.log("MakeBoxesForTextureGroup2: failed to find groupInfo for aux leaf ", props.aux.leaves[0], " in world ", masterCube.world)
+        return null
+    }
+    textureUrl = RewriteUrl(textureUrl, groupInfo, ts, forceRemote)
+
+    // console.log("MakeBoxesForTextureGroup baseUrl ", baseUrl, " asset ", asset, " repeat ", repeat, "rewriteUrl returns ", textureUrl)
+
+    // MakeBoxesForTextureGroup baseUrl  http://testmain-1n0u1w4p.vr  asset  street.jpg  repeat  1 rewriteUrl returns  http://localhost:3010/street.jpg
+    // add the remote param. 
+    // MakeBoxesForTextureGroup with texture:  http://testmain-1n0u1w4p_vr.knotfree.io/street.jpg  and cubeList length:  57
+    // try:  http://testmain-1n0u1w4p_vr.knotfree.dog:8085/street.jpg   with local server.
+    // and a version of local-hoster that is logging on to local server. 
+
+    let textureLoadingPath = "/loading-images/cobblestonesgrok512.jpg"
+    if (textureUrl.includes("street.jpg")) {
+        textureLoadingPath = "/loading-images/street.jpg"
+    }
+    const textureBackup = useTexture(textureLoadingPath) // a local texture that is always available.
+
+    let texture;
+    try {
+        texture = useTexture(textureUrl)
+        // console.log("MakeBoxesForTextureGroup using normal texture for ", textureUrl)
+
+    } catch (e) {
+        // console.log("Failed to load texture:", textureUrl)
+        // we should have a version of this with a big "error" sign posted at eye level. TODO:
+        // I'm getting this with a textureUrl that works, and will eventually load.
+        // what do I do in the meantime? 
+        // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
+        // setTimeout(() => {
+        //     setTries(tries + 1)
+        // }, 30000)
+        // const ourprops = {
+        //     worldDisplayState: props.worldDisplayState,
+        //     groupInfo: props.groupInfo,
+        //     indexBase: props.indexBase + 1234
+        // }
+        // violet means texture failed to load. We should have a better fallback texture that is local and always works.
+        // return <MakeBoxesForColorGroup {...ourprops} groupInfo={{ ...ourprops.groupInfo, asset: "color:violet" }} />
+
+        texture = textureBackup
+        // console.log("MakeBoxesForTextureGroup using backup texture for ", textureLoadingPath)
+    }
+
+    // TODO: get fallback texture that always works. Maybe a local one. 
+
+    // change list of treeStatus to list of cubes
+    const cubeList = treeStatusList.map(ts => oct.StringToCube(ts)[0])
+
+    // console.log("MakeBoxesForTextureGroup with texture: ", textureUrl, " and cubeList length: ", cubeList.length)
+
+    if (!cubeList)
+        return null
+    if (cubeList.length === 0)
+        return null
+    // console.log("MakeBoxesForTextureGroup recalculated: ", cubeList.length)
+
+    // console.log("ThingWithTexture ", textureUrl)
+
+    const positions = new Float32Array(cubeList.length * 4 * 3); // 4 points per quad, 3 coords per point
+    const indices = new Uint32Array(cubeList.length * 2 * 3); // 6 per quad
+    const uvs = new Float32Array(cubeList.length * 4 * 2); // 4 points per quad, 2 coords per point
+
+    let posIndex = 0
+    let idxIndex = 0
+    let uvIndex = 0
+
+    // it only does this once, when the prop changes, so it's not too bad. We could also memoize it if we wanted to be sure.
+    // we can take out time. 
+    const isCeiling = groupInfo.type === "ceiling"
+
+    //repeat = 2
+
+    // there's mirror wrapping. how do cobblestones look with mirror wrapping?
+    texture.wrapS = THREE.RepeatWrapping; // Horizontal wrapping 
+    texture.wrapT = THREE.RepeatWrapping; // Vertical wrapping
+
+    // 3. Define how many times the texture repeats (X, Y)
+    texture.repeat.set(repeat, repeat);
+
+
+    repeat = 1
+
+    // we don't realy know these are the same size.
+    for (const cube of cubeList) {
+        const size = 2 ** cube.p // are they not all the same size? 
+        // a huge ceiling can stand to have a bit of lowering to keep not bleed into the stuff above it. 
+        let offset = 0.1 * size// 10% of the size of the cube.
+        // until it becoomes absurd
+        if (offset > 0.1) { // but not more than 0.1m
+            offset = 0.1
+        }
+        const yoffset = isCeiling ? size - offset : offset // if it's a ceiling, we want to draw it a little bit lower than the actual ceiling so we can see it. This is a hack, but it works for now. We can fix it later if we want to. 
+        // the indices for the future 4 points coming up.
+
+        let currentPos = posIndex / 3   // the current position index, 
+        // which is the number of points we've added so far.
+        indices[idxIndex++] = currentPos + 0 // triangle 1
+        indices[idxIndex++] = currentPos + 1
+        indices[idxIndex++] = currentPos + 2
+
+        indices[idxIndex++] = currentPos + 0 // triangle 2
+        indices[idxIndex++] = currentPos + 2
+        indices[idxIndex++] = currentPos + 3
+
+        // these go with the coordinates. do we repeat here also?
+        uvs[uvIndex++] = 0
+        uvs[uvIndex++] = 0
+
+        uvs[uvIndex++] = repeat
+        uvs[uvIndex++] = 0
+
+        uvs[uvIndex++] = repeat
+        uvs[uvIndex++] = repeat
+
+        uvs[uvIndex++] = 0
+        uvs[uvIndex++] = repeat
+
+        positions[posIndex++] = cube.x
+        positions[posIndex++] = cube.y + yoffset
+        positions[posIndex++] = cube.z
+
+        positions[posIndex++] = cube.x + size
+        positions[posIndex++] = cube.y + yoffset
+        positions[posIndex++] = cube.z
+
+        positions[posIndex++] = cube.x + size
+        positions[posIndex++] = cube.y + yoffset
+        positions[posIndex++] = cube.z + size
+
+        positions[posIndex++] = cube.x
+        positions[posIndex++] = cube.y + yoffset
+        positions[posIndex++] = cube.z + size
+    }
+
+    // console.log("MakeBoxesForTextureGroup finished calculating positions.", " idxIndex: ", idxIndex, " positions size: ", positions.length)
+
+    // console.log("positions length expected", cubeList.length * 4 * 3, " actual ", positions.length)
+    // console.log("index length expected", cubeList.length * 2 * 3, " actual ", indices.length)
+
+    const geometry = new THREE.BufferGeometry();
+    // geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    // geometry.setAttribute('index', new THREE.BufferAttribute(indices, 1));
+
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1)); // Accepts standard array or Uint16Array/Uint32Array
+
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));  // 2 values per vertex (u,v)
+
+    const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, map: texture });
+    // const material = new THREE.MeshBasicMaterial({  side: THREE.DoubleSide , map: texture}); // no lighting.
+
+    geometry.computeVertexNormals();
+
+    return (
+        <>
+            <instancedMesh args={[geometry, material, cubeList.length]} key={props.aux.wholeMaster}>
             </instancedMesh>
         </>
     )

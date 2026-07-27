@@ -106,7 +106,7 @@ export const MetaverseProtoAbout: React.FC<MetaverseProtoAboutProps> = ({
             </div> */}
 
             <div className="flex items-center gap-x-3">
-              <a
+              {/* <a
                 href="https://gotohere.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -114,7 +114,7 @@ export const MetaverseProtoAbout: React.FC<MetaverseProtoAboutProps> = ({
               >
                 <Globe size={16} className="mr-1.5" />
                 <span>Launch Demo</span>
-              </a>
+              </a> */}
               <a
                 href="https://x.com/alan_t_wootton"
                 target="_blank"

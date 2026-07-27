@@ -1,6 +1,6 @@
 // import * as dns from "dns/promises" NOPE. We can't use this.
 
-import * as oct from '../../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import * as octload from '../../knotfree-ts-lib/3d/OctTreeLoaders'
 import * as atwdns from '../../knotfree-ts-lib/3d/DnsTypes'
@@ -30,6 +30,7 @@ let bigKnotfreeToken = process.env.BIG_KNOTFREE_TOKEN || "failed";
 
 const groupTextParameters: oct.GroupTextParameters = {
     id: "j9xK3mP8wL2z", // randomness
+    master: "must-be-valid-cube-string", // this is the master node of the group. It must be a valid cube string. Set later.
     dbg: "localhost:3010",
     type: "floor",
     asset: "street.jpg"

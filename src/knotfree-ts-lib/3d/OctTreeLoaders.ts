@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 
 import { CacheIntf } from './CacheIntf';
-import * as oct from './UrlOctTree'
+import * as oct from './DomainNameOctTree'
 // import * as atwdns from './DnsTypes'
 import { error } from 'console';
 import * as utils from './utils';
@@ -78,8 +78,8 @@ export async function twoWayLookupPart1(rawChain: oct.Cube[], recordType: "A" | 
             console.error(`Error converting cube to URL string: ${err}`)
             continue
         }
-        let vrName = `${name}.vr`
-        let xyzName = `${name}.xyz`
+        let vrName = `${name}.vr`   // allowed
+        let xyzName = `${name}.xyz`  // allowed
         if (prefix) {
             vrName = `${prefix}.${vrName}`
             xyzName = `${prefix}.${xyzName}`

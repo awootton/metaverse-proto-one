@@ -39,6 +39,7 @@ let previousChangeCount = -99;
 // UI Overlay Component with Vertical Controls
 // goes in the 2d
 export function NavigationControls1(props: NavigationControlsProps) {
+
     const styles: React.CSSProperties = { padding: '8px 12px', cursor: 'pointer', fontWeight: 'bold' };
 
     // state for compass angle
@@ -75,9 +76,15 @@ export function NavigationControls1(props: NavigationControlsProps) {
         };
     }, [isActive, seconds]); // Dependencies trigger the effect to update correctly
 
+    // what is the height og thus critter? 
+
+    // <div style={{ position: 'absolute', 
+    //             bottom: '-120px', left: '20px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
     return (
         <>
-            <div style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ position: 'relative', 
+                            left: '0px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}>
 
                 {/* <div style={{ color: '#fff', backgroundColor: 'rgba(0,0,0,0.6)', padding: '6px', borderRadius: '4px', fontSize: '12px' }}>
                 ⌨️ WASD / Arrows = Move | Space = Up | Shift = Down
@@ -275,7 +282,7 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
         // We STILL need to unhook this addEventListener when we're not using it. damn. How? 
 
         window.addEventListener('keydown', handleKeyDown);
-        console.log("NavigationCamera installation: added keydown listener");
+        // console.log("NavigationCamera installation: added keydown listener");
 
         return () => {
             // how do we make THIS happen so that the dialog will work? Just don't make the main canvas!!! 

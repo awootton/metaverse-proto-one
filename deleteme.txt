@@ -1,0 +1,24 @@
+
+
+// export type GroupInfo = BatchInfo
+
+
+export type AuxLeafStatus = 
+
+    // these two are a litle awkwarkd.
+    wholeMaster: string // of the base w/0 the tld. or any tree index's. It's parseable to a cube. It has the world name.
+    justTheWorld: string // It has Just the world name.
+    // We should strip off the world name to save space. lol
+    // commas?
+    leaves: string[] // this is the leafnames from the group. No TLD's, no world name. It will have to pass through the barrier.
+
+
+
+export function worldFromCubeName(name: string): string  {
+    const splitName = name.split("-")
+    if (splitName.length < 2) {
+        console.error(`worldFromCubeName: name ${name} is not a valid cube string`)
+    }
+    return splitName[0]
+}
+

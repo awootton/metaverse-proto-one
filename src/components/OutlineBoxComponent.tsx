@@ -5,7 +5,7 @@ import * as THREE from 'three';
 // what does useMemo do?
 import React from 'react';
 import { Text } from '@react-three/drei';
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree';
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 import { Edges } from '@react-three/drei';
 import { useTexture } from '@react-three/drei';
 import { Line } from '@react-three/drei';
@@ -24,7 +24,7 @@ export type OutlineBoxComponentProps = {
     color?: string,
     propsMessage: string,
     forceChainLink?: boolean
-    indexBase : number
+    // indexBase : number
 }
 
 // just draw the outline and the label. Delete the crap in the messy one below. It's a mess.
@@ -85,8 +85,8 @@ export function OutlineBoxComponentPlain(props: OutlineBoxComponentProps) {
     // what the hell. May pull in that far clip plane.
     return (
         <>
-            <leaves.CubeWithEdges cube={props.treeStatus.cube} index={props.indexBase}
-             key={props.indexBase} />
+            <leaves.CubeWithEdges cube={props.treeStatus.cube}
+             key={props.treeStatus.name} />
 
             <Text color={plainColorHere} anchorX="center" anchorY="middle"
                 position={[center[0], center[1] - width / 2 + adjustment, center[2]]}

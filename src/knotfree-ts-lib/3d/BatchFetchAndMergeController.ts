@@ -1,5 +1,5 @@
 
-import * as oct from './UrlOctTree'
+import * as oct from './DomainNameOctTree'
 import * as atwdns from './DnsTypes'
 import { error } from 'console';
 import * as utils from './utils';
@@ -199,7 +199,7 @@ export class BatchFetchAndMergeControllerSlowest {
         if (this.prefix) {
             name = `${this.prefix}.${name}`
         }
-        if (knotfreeNative) {
+        if (knotfreeNative) { // like the one place where this is is allowed.
             name = `${name}.vr`
         } else {
             name = `${name}.xyz`
@@ -322,18 +322,25 @@ export function FillInTxtLogic(theanswertext: string, treeStatus: oct.TreeStatus
     theanswertext = theanswertext.replace(/'/g, '"') // replace single quotes with double quotes.
     // cloudflare refuses double quites in TXT so we end up like this.
 
-    console.log("FillInTxtLogic for ", treeStatus.name, treeStatus.wasXYZ?".xyz":".vr", "with", theanswertext)
+    console.log("FillInTxtLogic for ", treeStatus.name, treeStatus.wasXYZ ? ".xyz" : ".vr", "with", theanswertext)
 
     // groupId?: GroupTextParameters | boolean, 
     // the group that this tree belongs to, which is the same for all leaf nodes rendered by the same iFrame or server. 
     let somegrp: oct.GroupTextParameters = {
-        id: utils.randomString(24)
+        id: utils.randomString(24),
+        master: "unknown-must-be-set"
     }
     try {
         somegrp = JSON.parse(theanswertext) as oct.GroupTextParameters
     } catch {
         // still a valid groupId.
-        somegrp = { id: utils.randomString(24) }
+        somegrp = {
+            id: utils.randomString(24),
+            master: "unknown-must-be-set2"
+        }
+    }
+    if( "mstr" in somegrp) { // from a refactor
+        somegrp.master = treeStatus.name
     }
     if (somegrp) {
         if (somegrp.id === undefined || somegrp.id === "") {
@@ -341,11 +348,13 @@ export function FillInTxtLogic(theanswertext: string, treeStatus: oct.TreeStatus
         }
     } else {
         // didn't parse.
-        somegrp = { id: utils.randomString(24) }
+        somegrp = {
+            id: utils.randomString(24),
+            master: "unknown-must-be-set3"
+        }
     }
     treeStatus.groupId = somegrp
 }
-
 
 
 // Copyright 2026 Alan Tracey Wootton

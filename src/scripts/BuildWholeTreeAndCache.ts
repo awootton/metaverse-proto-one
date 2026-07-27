@@ -1,6 +1,6 @@
 
 import { assert } from 'console';
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import * as THREE from 'three';
 
 import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
@@ -29,7 +29,7 @@ async function doTheScript() {
     // dnstypes.SetKnotfreeServer("https://knotfree.net") // test in prod.
     // Why? 
 
-    oct.gCubeCache.clear() // start with an empty cache.
+    oct.gTreeStatusCache.clear() // start with an empty cache.
     // to do this right we must cleear the child bits cache too.
     console.log("Starting to build the whole tree and cache it. cache size BEFORE clear: ", ourLocalStorage.length)
     oct.ClearChildBitsCache()
@@ -51,8 +51,8 @@ async function doTheScript() {
     // here's what we want:
     console.log("showingLeaves: ", builder.showingLeaves.size)
 
-    console.log("cache entries count: ", oct.gCubeCache.size)
-    const cacheSize = oct.gCubeCache.size
+    console.log("cache entries count: ", oct.gTreeStatusCache.size)
+    const cacheSize = oct.gTreeStatusCache.size
 
 
     // let's see that cache now.
@@ -71,7 +71,7 @@ async function doTheScript() {
     // now, do it AGAIN!
     // with a cleared cache but a non clear localStorage. This should be fast because the localStorage cache is used.
     if (false) {
-        oct.gCubeCache.clear() // start with an empty cache.
+        oct.gTreeStatusCache.clear() // start with an empty cache.
         console.log("Starting to build the whole tree and cache it. cache size: ", ourLocalStorage.length)
 
         startingTime = Date.now()
@@ -89,7 +89,7 @@ async function doTheScript() {
         endingTime = Date.now()
         console.log("Time taken to BuildVisibleTree #2: ", endingTime - startingTime, "ms for 1 run.", "or", (endingTime - startingTime) / 1, "ms per run.")
 
-        console.log("cube cache entries count: ", oct.gCubeCache.size)
+        console.log("cube cache entries count: ", oct.gTreeStatusCache.size)
 
         const cacheEntries2 = oct.GetTheWholeChildBitsLocalCache()
         console.log("child bits entries count: ", cacheEntries2.size)

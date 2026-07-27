@@ -11,8 +11,6 @@ import { TextureLoader, BackSide, Mesh } from "three"
 
 import * as THREE from 'three';
 
-import * as frameUtils from './IFrameUtils'
-import { ShowFrameList } from './MainShowFrames'
 import { mat4 } from 'three/examples/jsm/nodes/Nodes.js';
 
 import { Text, Billboard } from '@react-three/drei';

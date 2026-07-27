@@ -1,5 +1,5 @@
 
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
 import * as loaders from '../knotfree-ts-lib/3d/OctTreeLoaders'

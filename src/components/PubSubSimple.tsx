@@ -1,30 +1,34 @@
 
-// This is a simple pub/sub system for components to subscribe to changes, messages and replies.
-// use sessionID to subscribe.
-// unused and might not be fit for purpose.
-// are we using this?? delete me. 
-// note that it's just the item and not an topic and a component. 
-// so it's more of a direct messaging system.
 
-type localMapItem = {
-    callback: (status: Object, err: string) => any
+// This is the singleton subscribe. This is NOT where several entities can subscribe to the same topic. 
+// We could do this with the other one, and we could make mistakes.
+
+// We use this for iFrames to have a message bus. Note that the "T" for the messages is the
+// minimal base class for internal messages.
+// It's not like subscribing to a list or a data structure. It's more like where a server has a domain name or an address 
+// and we all send it commands and messages.
+// It's a singleton subscribe.
+
+type localMapItem<T> = {
+    callback: (message: T, err: null | Error) => any
 }
 
-// from sessionID to localMapItem
-let sessionMap = new Map<string, localMapItem>()
+// Do we really need the error?
 
-export function subscribe(sessionID: string, cb: (status: Object, err: string) => any): localMapItem | undefined {
+// from subscriptionId to localMapItem
+let sessionMap = new Map<string, localMapItem<any>>()
 
-    console.log('PubSubSessions subscribe', sessionID)
-
-    let found: localMapItem | undefined = sessionMap.get(sessionID)
+// If you do this twice the first one gets washed away.
+// If you're not the guy for these messages, and you subscribe anyway, you could be totally screwing someone else up. 
+// So, be careful. This is a singleton subscribe. It's not like subscribing to a list or a data structure.
+// I would like to cap this, Go rules. Nobody was using the return.
+export function subscribe<T>(subscriptionId: string, cb: (message: T, err: null | Error) => any) { //: localMapItem<T> | undefined {
+    let found: localMapItem<T> | undefined = sessionMap.get(subscriptionId)
     if (found === undefined) {
-
-        let found: localMapItem = {
+        let found: localMapItem<T> = {
             callback: cb
         }
-        sessionMap.set(sessionID, found)
-
+        sessionMap.set(subscriptionId, found)
     } else {
         // replace the callback
         found.callback = cb
@@ -32,26 +36,25 @@ export function subscribe(sessionID: string, cb: (status: Object, err: string) =
     return found
 }
 
-export function publish(sessionID: string, status: Object) {
-
-    const found = sessionMap.get(sessionID)
+export function publish<T>(subscriptionId: string, message: T) {
+    const found = sessionMap.get(subscriptionId)
     if (found !== undefined) {
         let cb = found.callback
-        // in a different thread?
-        setTimeout(() => {
-            console.log('pubsub sessions publish', sessionID, status)
-            cb(status, "")
-        }, 1)
+        setTimeout(() => {          // in a different goroutine!
+            cb(message, null)
+        }, 0) // right now, asap.
+    } else {
+        console.log('PubSubSimple publish: no subscriber found for', subscriptionId, message)
     }
 }
 
-// remove is called when a component is unmounted.
-export function unsubscribe(sessionID: string) {
+// Remove is called when a component is unmounted. Prevent leaks.
+export function unsubscribe(subscriptionId: string) {
 
-    const found = sessionMap.get(sessionID)
+    const found = sessionMap.get(subscriptionId)
     if (found !== undefined) {
-        console.log('pubsub sessions unsubscribe', sessionID)
-        sessionMap.delete(sessionID)
+        // console.log('PubSubSimple unsubscribe', subscriptionId)
+        sessionMap.delete(subscriptionId)
     }
 }
 

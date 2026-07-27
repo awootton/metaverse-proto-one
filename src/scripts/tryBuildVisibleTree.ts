@@ -1,7 +1,7 @@
 
 
 import { assert } from 'console';
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import * as THREE from 'three';
 
 import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
@@ -38,7 +38,7 @@ async function doTheScript() {
     // to test prod:
     // dnstypes.SetKnotfreeServer("https://knotfree.net") // test in prod.
 
-    oct.gCubeCache.clear() // start with an empty cache. 
+    oct.gTreeStatusCache.clear() // start with an empty cache. 
 
     // just load cache when we're done and then write at the end.
     // ReadAllTheCubeCacheIn()
@@ -94,9 +94,9 @@ async function doTheScript() {
     // too much console.log("the cache: ", builder.cubeCache)
     // it's like 7 * 16 = 112 entries 
 
-    console.log("cache entries count: ", oct.gCubeCache.size)
+    console.log("cache entries count: ", oct.gTreeStatusCache.size)
 
-    const cacheSize = oct.gCubeCache.size
+    const cacheSize = oct.gTreeStatusCache.size
 
     // for all the cache
     if (true) { // do this later.
@@ -171,7 +171,7 @@ async function doTheScript() {
             if (builder.showingLeaves.size !== 77) {
                 console.error("Error: showingLeaves is not 77. ", builder.showingLeaves.size)
             }
-            if (cacheSize !== oct.gCubeCache.size) {
+            if (cacheSize !== oct.gTreeStatusCache.size) {
                 console.error("Error: cache size changed. ", got)
             }
         }
@@ -180,7 +180,7 @@ async function doTheScript() {
     console.log("Time taken: ", endingTime - startingTime, "ms for ", runs, " runs.", "or", (endingTime - startingTime) / runs, "ms per run.")
     // Time taken:  165 ms for  1000  runs. or 0.165 ms per run.
 
-    console.log("cache entries count: ", oct.gCubeCache.size)
+    console.log("cache entries count: ", oct.gTreeStatusCache.size)
 
     WriteAllTheCubeCacheOut()
 

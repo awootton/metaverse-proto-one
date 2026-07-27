@@ -3,9 +3,11 @@ import React, { useRef, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { MainWorldDisplay } from './MainWorldDisplay'
 
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import { RootState, useFrame, useThree } from '@react-three/fiber'
+
+import { Vector3 } from 'three'
 
 
 // a make a canvas thst shows MainWorldDisplay, Just like the other one.
@@ -18,24 +20,49 @@ import { useTexture } from '@react-three/drei'
 
 
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
-import { WorldDisplayState } from './WorldDisplayState';
+// import { WorldDisplayState } from './WorldDisplayState';
 import { Background, Backdrop, Backcube } from './AppCanvas';
 
 // const appVisibleTree = new bvts.BuildVisibleTreeStatus(myMapCacheIntf);
 
-export type Props = {
+export type OrbitalProps = {
   // spaces: string // comma delimited. UrlCubes to load and display in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
   // color?: string // optional color for the boxes, default to green. get rid of this.
-  worldDisplayState: WorldDisplayState
+  // worldDisplayState: WorldDisplayState
+
+  // these are better when they are FLAT
+
+  worldName: string
+
+  // previousCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
+  // timeSinceLastCameraMovement: number // = 0
+  currentCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
+  // and velocity! and size ! 
+
+  // what does it mean to have two copies of THIS gadget? It starts clean every time so what's the point in saving it?
+  // every instance of MainWorldDisplay should have it's own copy of the BuildVisibleTreeStatus, but they should share the same cache.
+  // theGlobalTree: bvts.BuildVisibleTreeStatus // = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+
+  uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
+  showOriginAxis: boolean // = true should we pass these around as props or just have them in local storage? 
+  // CP: I think we should have them in local storage, so they can be shared between different instances of the component.
+  // Well, copilot has no class so we're keepkng them here. 
+
+  onlyShowOutlineBoxes: boolean // = false, don't save this in storage.
+  toggleOnlyShowOutlineBoxes: () => void
+
+
   showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
 
   shouldShowOrbitalCanvasDisplay: boolean // turn the whole thing off when it's hidden.
 
 }
 
-export default function OrbitCanvas(orbitalProps: Props) {
+export default function OrbitCanvas(orbitalProps: OrbitalProps) {
 
   console.log("OrbitCanvas starting with props: ", orbitalProps)
+  //console.log("OrbitCanvas starting with leaves: ", orbitalProps.showingLeaves.length)
+  console.log("OrbitCanvas shouldShowOrbitalCanvasDisplay: ", orbitalProps.shouldShowOrbitalCanvasDisplay)
 
   // default to looking at the origin, but ideally would look at the center of the loaded property or properties. 
   // For now we can just look at the origin and make sure the demo properties are located there.
@@ -85,6 +112,8 @@ export default function OrbitCanvas(orbitalProps: Props) {
     )
   }
 
+  console.log("OrbitCanvas we don't see this if it's OFF: ", orbitalProps.shouldShowOrbitalCanvasDisplay)
+
   return (
     <>
 
@@ -93,9 +122,17 @@ export default function OrbitCanvas(orbitalProps: Props) {
       >
 
         <OrbitCanvasInTheCanvas
-          worldDisplayState={orbitalProps.worldDisplayState}
+
+          //  worldDisplayState={orbitalProps.worldDisplayState}
           showingLeaves={orbitalProps.showingLeaves}
-          shouldShowOrbitalCanvasDisplay={orbitalProps.shouldShowOrbitalCanvasDisplay}
+          shouldShowOrbitalCanvasDisplay={orbitalProps.shouldShowOrbitalCanvasDisplay} 
+          worldName={''} 
+          currentCameraPosition={new Vector3} 
+          uniqueId={''} showOriginAxis={false} 
+          onlyShowOutlineBoxes={false} toggleOnlyShowOutlineBoxes={function (): void {
+            throw new Error('Function not implemented.')
+          } }
+
         />
 
       </Canvas >
@@ -105,7 +142,7 @@ export default function OrbitCanvas(orbitalProps: Props) {
 }
 
 // only the 3d part
-export function OrbitCanvasInTheCanvas(orbitalProps: Props) {
+export function OrbitCanvasInTheCanvas(orbitalProps: OrbitalProps) {
 
   let theCameraPosition: [number, number, number] = [0, 1.75, 0]
   let farClip = 9999
@@ -126,9 +163,10 @@ export function OrbitCanvasInTheCanvas(orbitalProps: Props) {
 
   })
 
-  const targetPosition: [number, number, number] = [orbitalProps.worldDisplayState.currentCameraPosition.x, orbitalProps.worldDisplayState.currentCameraPosition.y, orbitalProps.worldDisplayState.currentCameraPosition.z];
+  //const targetPosition: [number, number, number] = [0, 0, 0];
+  // const targetPosition: [number, number, number] = [orbitalProps.worldDisplayState.currentCameraPosition.x, orbitalProps.worldDisplayState.currentCameraPosition.y, orbitalProps.worldDisplayState.currentCameraPosition.z];
 
-  console.log("OrbitCanvasInTheCanvas starting with position: ", orbitalProps.worldDisplayState.currentCameraPosition)
+  console.log("OrbitCanvasInTheCanvas starting with position: ", orbitalProps.currentCameraPosition)
 
   return (
     <>
@@ -145,7 +183,7 @@ export function OrbitCanvasInTheCanvas(orbitalProps: Props) {
       />
 
       <OrbitControls
-        target={targetPosition}
+        target={orbitalProps.currentCameraPosition.toArray() as [number, number, number]} // Set the target to the current camera position
         enableDamping={true} // Smooth stopping momentum
         dampingFactor={0.05}
         maxDistance={10 * size}     // Limit how far user can zoom out
@@ -158,13 +196,20 @@ export function OrbitCanvasInTheCanvas(orbitalProps: Props) {
       {/* <Backcube position={theCameraPosition} farClip={farClip} /> */}
 
       <MainWorldDisplay
+
         // demoSpaces={orbitalProps.spaces}
-        state={orbitalProps.worldDisplayState}
+      //  state={orbitalProps.worldDisplayState}
         showingLeaves={orbitalProps.showingLeaves}
-        indexBase={1000}
+        
+  //      indexBase={1000}
+        worldName={orbitalProps.worldName}
+        onlyShowOutlineBoxes={orbitalProps.onlyShowOutlineBoxes}  
+        showOriginAxis={orbitalProps.showOriginAxis}
+      //  uniqueId='929877' 
+
+
       // {...orbitalProps.worldDisplayState} // this is a bit of a mess. maybe we should just pass the whole state object as a prop, instead of trying to spread it out into individual props. but this is fine for now, not ideal. 
       />
-
     </>
   )
 }

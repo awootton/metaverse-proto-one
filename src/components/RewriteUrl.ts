@@ -1,5 +1,5 @@
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes';
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree';
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 
 // When we are local and running against the local copy of WorldsTest1 we want to rewrite the urls to point to the local server instead of the remote server.
 // This way there's debugging available for the iFrame even from inside this app. Very cool.

@@ -1,4 +1,4 @@
-import * as oct from '../../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
 
@@ -22,6 +22,7 @@ const property2 = "testmain-2n0u4w2p" // needs a duck. lol. See the groupTextPar
 // are these in a group? no, not this time and this test.
 const groupTextParameters: oct.GroupTextParameters = {
     id: "", // none, filled in later
+    master: "this will get automatically get filled if not set", // it must be a valid cube string.
     dbg: "localhost:3010",
     type: "floor",
     asset: "color:orange" // navy blue "color:green"

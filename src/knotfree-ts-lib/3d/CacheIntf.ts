@@ -1,5 +1,5 @@
 
-import * as oct from './UrlOctTree'
+import * as oct from './DomainNameOctTree'
 
 // TODO: build a map backed up by local storage, and use that for the cache in the tree traversal.
 // The problem with that is that every time we come back the whole stupid cache will have 
@@ -21,20 +21,20 @@ export interface CacheIntf {
 // TTL is infinite.
 export const myMapCacheIntf: CacheIntf = {
     get(key: string): oct.TreeStatus | undefined {
-        return oct.gCubeCache.get(key)
+        return oct.gTreeStatusCache.get(key)
     },
     set(key: string, value: oct.TreeStatus, options?: { ttl?: number, start?: number }): void {
         // console.log("myMapCacheIntf caching ", key, )
-        oct.gCubeCache.set(key, value)
+        oct.gTreeStatusCache.set(key, value)
     },
     delete(key: string): void {
-        oct.gCubeCache.delete(key)
+        oct.gTreeStatusCache.delete(key)
     },
     clear(): void {
-        oct.gCubeCache.clear()
+        oct.gTreeStatusCache.clear()
     },
     keys(): IterableIterator<string> {
-        return oct.gCubeCache.keys()
+        return oct.gTreeStatusCache.keys()
     }
 }
 

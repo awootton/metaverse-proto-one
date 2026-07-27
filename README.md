@@ -35,3 +35,9 @@ You may contribute. Send me a PR. Fork the code etc. I'm a legit pro at this.
 Check back later. There's another project we can run that will develop properties (as in real estate, avatars and objects)
 
 And, yes. For the record, I've gone insane. Not well at all. Doctors give me amazing drugs. Don't try this at home.
+
+### Notes: major re-write. Perhaps I understood but ALL 
+```index```
+ props are being eliminated. So, no more 
+ ```index={props.indexBase}```
+Furthermore: ```key``` is NOT to sequence items in a list. It's better to uniquely identify a row in a column forever. We will not be using numbers for this when we have perfectly good id's for everything.

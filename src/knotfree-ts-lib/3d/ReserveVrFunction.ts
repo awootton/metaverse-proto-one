@@ -1,5 +1,5 @@
 
-import * as oct from './UrlOctTree'
+import * as oct from './DomainNameOctTree'
 
 import * as loaders from './OctTreeLoaders'
 import * as atwdns from './DnsTypes'
@@ -22,6 +22,12 @@ export type ThingsThatAlreadyExistType = {
 // the list of cubes that we already had in the cache, the list of cubes that we actually need to reserve, 
 // a reference to the cube cache, and any error that occurred during the process.
 // Prepared by PrepareToReservePropertyBatch
+
+// This is NOT the right way, or the right algo to remove a property.
+// right way is to put the target leaf on a list to delete and then check if there is a child bits cache
+// that reverences it, and ONLY it. Then we put that on the list to delete, and then recurse.
+// A child bits cache cannot be deleted but it's key is a domain name and it can go.
+// Then we may have to wait 5 minutes AND refresh your browser app. (shift-reload).
 export type ReserveResult = {
     startingProperties: string[],
     rawChains: oct.Cube[][], // the raw chain of cubes that we would need to reserve, including the ones that are already in the cache. This is for debugging and visualization purposes.
@@ -73,7 +79,7 @@ export class ReserveVrFunctions {
         }
         // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
 
-        let tmp = await this.PrepareToReservePropertyBatch(cubeNames, oct.gCubeCache)
+        let tmp = await this.PrepareToReservePropertyBatch(cubeNames, oct.gTreeStatusCache)
         // console.log("PrepareToReservePropertyBatch result", tmp)
         if (tmp instanceof Error) {
             console.error("Error preparing to reserve property batch:", tmp)
@@ -195,9 +201,9 @@ export class ReserveVrFunctions {
                         var theseParams = {
                             ...groupTextParameters,
                         } as oct.GroupTextParameters
-                        if ( i === 0) {
+                        if (i === 0) {
                             // if it's the first one, then we should set it as the master. 
-                            theseParams.mstr = true
+                            theseParams.master = "must-be-valid-cube-string"
                             console.log(`Setting ${cubeUrlVr} as the master node for the group. ${theseParams.id}`)
                         }
                         const gtpString = JSON.stringify(theseParams)
@@ -228,6 +234,204 @@ export class ReserveVrFunctions {
             return null;
         }
     }
+
+
+    // This is half ass. Make a better one. Start with a new fresh childbits cache and it's easy.
+    // none of this mucking about.
+    async DeleteVr(cubeNames: string[], groupTextParameters: oct.GroupTextParameters): Promise<Error | null> {
+
+        // from GetTheKeys ...
+        // const passPhrase = process.env.PRIVATE_KNOTFREE_PASSPHRASE || "failed";
+        // let bigKnotfreeToken = process.env.BIG_KNOTFREE_TOKEN || "failed";
+
+        const gtpString = JSON.stringify(groupTextParameters)
+        if (gtpString.length > 255) {
+            console.error("Group text parameters are too long to fit in a TXT record. Please shorten them.")
+        }
+        // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
+
+        let tmp = await this.PrepareToReservePropertyBatch(cubeNames, oct.gTreeStatusCache)
+        // console.log("PrepareToReservePropertyBatch result", tmp)
+        if (tmp instanceof Error) {
+            console.error("Error preparing to reserve property batch:", tmp)
+            return new Error("Error preparing to reserve property batch: " + tmp.message)
+        }
+        const reserveResult = tmp[0]
+        {
+            tmp = await this.VerifyReservePropertyBatch(reserveResult)
+            //console.log("VerifyReservePropertyBatch result", tmp)
+            if (tmp instanceof Error) {
+                console.error("Error verifying reserve property batch:")
+
+                return new Error("Error verifying reserve property batch: " + tmp.message)
+            } else {
+                console.log("Successfully verified reserve property batch. Starting properties:", tmp[0].startingProperties)
+                console.log("Successfully verified reserve property batch. thingsThatAlreadyExist:", tmp[0].thingsThatAlreadyExist)
+                //console.log("Successfully verified reserve property batch. Result:", tmp)
+            }
+            for (const chain of reserveResult.rawChains) {
+                // too many to log
+                // console.log("Raw chain:", chain.map(cube => oct.CubeToString(cube)[0]))
+            }
+
+            // prepare the lists. 
+            await this.PrepareTheLists(reserveResult)
+
+            if (reserveResult.thingsThatAlreadyExist.length > 0) {
+                console.log("The following properties already exist and won't be reserved again:", reserveResult.thingsThatAlreadyExist.map(item => oct.CubeToString(item.cube)[0]))
+            }
+
+            if (reserveResult.thingsToActuallyReserve.length === 0) {
+                console.error("No properties to reserve after preparation.")
+                if (reserveResult.leavesWeOwn.length > 0) {
+                    console.log("These need to be deleted if we're deleting.", reserveResult.leavesWeOwn.map(item => oct.CubeToString(item.cube)[0]))
+
+                    const yn = await askQuestion("Would you like to keep going and delete these? (y/n) ")
+                    if (yn.toLowerCase() === "n") {
+                        console.log("Aborting reservation.")
+                        return new Error("No properties to reserve after preparation.")
+                    }
+                    // copy the leavesWeOwn into thingsToActuallyReserve so we can process them.
+                    reserveResult.thingsToActuallyReserve.push(...reserveResult.leavesWeOwn)
+                }
+            }
+            console.log("Ready to DELETE the following properties:", reserveResult.thingsToActuallyReserve.map(thing => oct.CubeToString(thing.cube)[0]))
+
+            // const gtpString = JSON.stringify(groupTextParameters)
+            // if (gtpString.length > 255) {
+            //     console.error("Group text parameters are too long to fit in a TXT record. Please shorten them.")
+            //     return new Error("Group text parameters are too long to fit in a TXT record. Please shorten them.")
+            // }
+            // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
+        }
+
+        const yn = await askQuestion("Would you like to DELETE these names now? (y/n) ")
+        if (yn.toLowerCase() !== "y") {
+            console.log("Aborting deletion.")
+            return new Error("Deletion aborted by user.")
+        } else {
+            console.log("going through with deleting.", reserveResult.thingsToActuallyReserve.map(thing => oct.CubeToString(thing.cube)[0]))
+            console.log()
+            console.log()
+            console.log()
+            let i = 0
+            for (const thing of reserveResult.thingsToActuallyReserve) {
+                try {
+                    let err: Error | null
+                    let cubeStr: string
+                    [cubeStr, err] = oct.CubeToString(thing.cube)
+                    if (err) {
+                        console.error("Error converting cube to URL string:", err)
+                        return new Error("Error converting cube to URL string: " + err.message)
+                    }
+                    // if (!thing.cube.whichParent) {
+                    //     console.log(`Reserving property ${cubeStr}.vr with group text parameters:`, JSON.stringify(groupTextParameters))
+                    // }
+                    // Here you would call the function to actually reserve the property using the cubeStr and groupTextParameters.
+                    // This might involve sending a command to the knotfree API or some other action depending on how your reservation system works.
+                    // what if it fails in the middle? Seppuku. The only recourse.
+                    // just kidding. if we run it again it should skip the ones that already exist and try to reserve the rest.
+                    const cubeUrlVr = cubeStr + "_vr" // how knotfree does a .vr domain. (or any domain)
+                   //  const leafName = thing.cube.name + "_vr"
+                    try {
+
+                        let [res, err] = await names.sendNameserviceCommandHarder("exists ", cubeUrlVr, { pubk: this.pubk, priv: this.priv })
+                        if (err) {
+                            console.error("Error checking if name exists:", err)
+                        } else {
+                            // console.log("exists sendNameserviceCommand", res)
+                            const existsObj = JSON.parse(res) as names.LookupNameExistsReturnType
+                            if (existsObj.Exists && existsObj.Owner === this.pubk) {
+                                // we own it, so we can delete .
+                                thing.weOwnIt = true
+                            } else if (!existsObj.Exists) {
+                                // it doesn't exist, so we can reserve it.
+                                thing.weOwnIt = false
+                            } else {
+                                // it exists and we don't own it, so we can't reserve it.
+                                // We'll worry about this later.
+                                // console.log(`Cannot reserve ${leafName} because it already exists and is owned by someone else.`)
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error PrepareTheLists checking ownership of leaf:", e)
+                    }
+
+                    if (!thing.weOwnIt) {
+                        console.log(`DeleteVr We thought we owned this ${cubeStr} as ${cubeUrlVr}. It does not exist or is not owned by us. Skipping.`)
+                    }
+
+                    // this is all bullshit because you can try to delete anyway. if (thing.weOwnIt) 
+                        {
+                        // don't do the exist and the reserve again.
+                        console.log(`We own ${cubeStr} as ${cubeUrlVr}. It now exists in the name service. We will attempt to delete it.`)
+
+                        let res: string
+                        let err: Error | null
+
+                        // does it belong to me? If it does then we can just keep going anyway.
+                        // if (existsObj.Exists && existsObj.Owner !== this.pubk) 
+                        // then we can just keep going anyway, boldly.
+                        // const tokenAsBase64 = utils.fromBase64Url(this.bigKnotfreeToken)
+                        // const astr: string = "delete " + cubeUrlVr + " " + this.bigKnotfreeToken;
+                        // const astr: string = "delete " + cubeUrlVr + " " + this.bigKnotfreeToken;
+                        let astr: string = "delete " + cubeUrlVr;
+                        [res, err] = await names.sendNameserviceCommandHarder(astr, cubeUrlVr, { pubk: this.pubk, priv: this.priv })
+                        if (err) {
+                            console.error("Error deleting name:", err)
+                            return new Error("Error deleting name: " + err.message)
+                        }
+                        console.log(`Attempted to delete ${cubeUrlVr} Response:`, res)
+                        if (res.startsWith("FAILED")) {
+                            console.error(`Failed to delete ${cubeUrlVr}:`, res)
+                        } else {
+                            console.log(`Successfully deleted ${cubeUrlVr} Response:`, res)
+                        }
+                    }
+                    // if cubeStr ends has -0 or -1 ... -7 at the end, then it's a parent and we should not set the group text parameters on it. We should only set the group text parameters on the leaf nodes that we actually reserved. This is because the parent nodes are shared with other properties and we don't want to mess with their group text parameters.
+                    // just look for the dash
+                    // isn't this already done? 
+                    // const leafNodeMatch = cubeStr.match(/-([0-7])\_vr$/)
+                    // if (leafNodeMatch === null) { // no match for parent it's a leaf
+
+                    //     var theseParams = {
+                    //         ...groupTextParameters,
+                    //     } as oct.GroupTextParameters
+                    //     if (i === 0) {
+                    //         // if it's the first one, then we should set it as the master. 
+                    //         theseParams.mstr = true
+                    //         console.log(`Setting ${cubeUrlVr} as the master node for the group. ${theseParams.id}`)
+                    //     }
+                    //     const gtpString = JSON.stringify(theseParams)
+
+                    //     // don't set these on parents.
+                    //     const gtpStringBase64Url = Buffer.from(gtpString).toString('base64url')
+                    //     // this is a CRAP convention that I made up and I apologize for it. 
+                    //     const gtpStringBase64UrlWithEquals = "=" + gtpStringBase64Url
+
+                    //     const cmd = `set option txt meta_group_id ${gtpStringBase64UrlWithEquals}`
+                    //     console.log(`Setting group text parameters on ${cubeUrlVr} since it appears to be a leaf node. cmd = ${cmd}`)
+                    //     const [res, err] = await names.sendNameserviceCommandHarder(cmd, cubeUrlVr, { pubk: this.pubk, priv: this.priv })
+                    //     if (err) {
+                    //         console.error("Error setting option:", err)
+                    //         return new Error("Error setting option: " + err.message)
+                    //     }
+                    //     console.log(`set option ${cubeUrlVr}`, res)
+                    //     console.log()
+                    // }
+                } catch (e) {
+                    // let's keep trying to do the rest of them even though the 
+                    // server rudely hung up on us. 
+                    console.error("Error during reservation process:", e)
+                    // keep going return new Error("Error during reservation process: " + (e instanceof Error ? e.message : String(e)))
+                }
+                i++
+            }
+            return null;
+        }
+    }
+
+
 
     // PrepareToReserveProperty will prepare a list of names to reserve. 
     // It does not actually do the reservation, and it will NOT check the cache and return the whole list.

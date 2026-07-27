@@ -1,17 +1,22 @@
 
 ## Cliffs notes:
 
+Also see src/knotfree-ts-lib/avatars/README.md
+
 App 
 
     showingLeaves, setShowingLeaves
     pubsub.subscribe("ShowingLeavesChanges", "App"+appDisplayState.uniqueId, 
 
-    export type WorldDisplayState = {
+    export type WorldDisplayState = { antique
         worldName: string
+
         previousCameraPosition: 
         timeSinceLastCameraMovement: 
         theGlobalTree:  
+
         uniqueId: string 
+        
         onlyShowOutlineBoxes: boolean
         showOriginAxis: boolean 
 
@@ -157,8 +162,13 @@ testmain-1s1u1w9p to testmain-0n1u0e9p
 // it's 2 by 2:
 from testmain-2s1u2w9p to testmain-1n1u1e9p
 
-I saw this working: it's 5 by 5 
+I saw this working: it's 5 by 5  
 from testmain-2s1u2w9p to testmain-2n1u2e9p
+what color?  F0FFFE  ??
+
+from testmain-2s1u2w10p to testmain-2n1u2e10p
+
+
 
 
 big floor thing?  DONE it's a 4 by 4 of .5 km cubes.

@@ -1,4 +1,4 @@
-import * as oct from '../../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
 
@@ -34,6 +34,7 @@ console.log("reserving these parcels: ", fromtostringList)
 const groupTextParameters: oct.GroupTextParameters = {
     id: "TmiiPiEvT1HsyuFz6WyJB7pK", // they can all draw, and act, together.
     dbg: "localhost:3010",
+    master: "this will get automatically get filled if not set", // it must be a valid cube string. It's testmain-1n0u1w4p 
     // mstr: false, // the first one is the master. The others are not. The iFrame will connect to the master for assets.
     type: "floor",
     asset: "street.jpg" // a road color from the web. http://localhost:3010/street.jpg

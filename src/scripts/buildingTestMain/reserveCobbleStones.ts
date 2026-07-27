@@ -1,4 +1,4 @@
-import * as oct from '../../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
 
@@ -20,6 +20,7 @@ const property1 = "testmain-0n0u0e5p" // It's a small 32 by 32 lol, ha ha.
 // are these in a group? no, not this time and this test.
 const groupTextParameters: oct.GroupTextParameters = {
     id: "5zQ1bN6r2vW8mP3L4j9KxYtC", //  a group of one.
+    master: property1, // it was always going to be you.
     dbg: "localhost:3010",
     type: "floor",
     asset: "cobblestonesgrok512.jpg:repeat:20" //  

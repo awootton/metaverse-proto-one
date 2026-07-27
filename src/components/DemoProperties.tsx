@@ -6,8 +6,8 @@ import { RootState, useFrame } from '@react-three/fiber';
 
 import * as THREE from 'three';
 
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree';
-import { WorldDisplayState } from './WorldDisplayState';
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+// import { WorldDisplayState } from './WorldDisplayState';
 
 
 // I don't know where to put this stuff.
@@ -41,7 +41,7 @@ import { WorldDisplayState } from './WorldDisplayState';
 // RetreiveTheDemoCubes returns an array of cubes
 // It's supposed to be a comma dlimited list or else a from x to y expression.
 // It will parse the string and return an array of cubes. If it can't parse the string, it will return an empty array.
-export function RetreiveTheDemoCubes(worldDisplayState: WorldDisplayState): oct.Cube[] {
+export function RetreiveTheDemoCubes(): oct.Cube[] {
     // console.log("RetreiveTheDemoCubes called")
 
     // we want to do this once every hardly ever but always just enough. lol.
@@ -71,11 +71,13 @@ export function RetreiveTheDemoCubes(worldDisplayState: WorldDisplayState): oct.
 // Then we draw the ones in the frustum and close enough where the user could read the address on the floor of the box.
 // we could also draw the ones that are further away but maybe just as a dot or something, to show where they are. ?? maybe
 
+// the key is the name of the cube
 type MakeBoxesForDemoSpacesProps = {
-    worldDisplayState: WorldDisplayState
+    worldName: string
     demoCubeList: oct.Cube[] // this is the list of cubes to draw. We will get this from the DemoProperties string in localStorage and parse it. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
     color?: string // optional color for the boxes. If not provided, will default to green.
-    indexBase: number // since they share these with leaves they need different numbers.
+
+    // indexBase: number // since they share these with leaves they need different numbers.
     // always just get this from localStorage when we need it
     // demoSpaces: string // comma delimited list of UrlCubes to draw as green boxes. This is for demo purposes, to show how we can draw boxes for specific spaces. In a real application, we would want to draw boxes for all the spaces that are for sale, or that are owned by the user, or something like that. We could also include other information in the props, such as the color of the boxes, or the message to display when hovering over the boxes, etc.
 }
@@ -87,14 +89,16 @@ export function MakeBoxesForDemoSpaces(props: MakeBoxesForDemoSpacesProps) {
     // also return a version of the old slow way.
     const color = props.color || "#39FF14"
     // console.log("MakeBoxesForDemoSpaces with color: ", color, " and cubeList length: ", cubeList.length)
+
+
     return (
         <>
             <MakeOutlineBoxesForDemoSpaces
-                worldDisplayState={props.worldDisplayState}
-                demoCubeList={cubeList}
-                color={color}
-                indexBase={props.indexBase } />
-            <MakeBoxesForDemoSpacesLines {...props} indexBase={props.indexBase } />
+                {...props} 
+            />
+
+            <MakeBoxesForDemoSpacesLines {...props} 
+          />
         </>
     )
 }
@@ -115,13 +119,13 @@ export function MakeBoxesForDemoSpacesLines(props: MakeBoxesForDemoSpacesProps) 
         return null
     if (cubeList.length === 0)
         return null
-    // const spacesArray: string[] = tmp.split(",").map(s => s.trim())
-    // if (spacesArray.length === 0) {
-    //     return (
-    //         <>
-    //         </>
-    //     )
-    // }
+    // assuming there's a cube list
+    const [aname,err] = oct.CubeToString(cubeList[0])
+    if (err) { // thinks than can never happen
+        console.error("MakeBoxesForDemoSpacesLines error converting cube to string: ", err)
+        return null
+    }
+    const uniqueKey = MakeBoxesForDemoSpacesLines.name + aname
     console.log("MakeBoxesForDemoSpaces recalculated: ", cubeList.length)
     // I'm trying to chain points. I'm going with pairs.
     // many pairs will repeat. SOON. Get this to work first.
@@ -201,11 +205,13 @@ export function MakeBoxesForDemoSpacesLines(props: MakeBoxesForDemoSpacesProps) 
 
     console.log("MakeBoxesForDemoSpaces finished calculating positions. posIndex: ", posIndex, " lineCount: ", lineCount, " positions size: ", positions.length)
 
+
+
     // was #AAFF00 too hard to see.
     return (
         <>
 
-            <lineSegments key={props.indexBase} >
+            <lineSegments key={uniqueKey} >
                 <bufferGeometry  >
                     <bufferAttribute
                         attach="attributes-position"
@@ -256,10 +262,9 @@ function MakeOutlineBoxesForDemoSpaces(props: MakeBoxesForDemoSpacesProps) {
     return (
         <>
             {cubeList.map((cube, index) => {
-                return <OutlineBoxComponentTextOnly key={props.indexBase + index} cube={cube} errorMsg={undefined} color={color}
-                    propsMessage={"this space 4 sale"} 
-                    indexBase={props.indexBase + index}
-                    cameraPosition={cameraPosition} />
+                return <OutlineBoxComponentTextOnly key={oct.CubeToString(cube)[0]} cube={cube} errorMsg={undefined} color={color}
+                    propsMessage={"this space 4 sale"}
+                    />
             })}
         </>
     )
@@ -272,8 +277,7 @@ export function OutlineBoxComponentTextOnly(props: {
     errorMsg: string | undefined,
     color?: string,
     propsMessage: string,
-    cameraPosition: THREE.Vector3
-    indexBase: number
+    // cameraPosition: THREE.Vector3
 }) {
     const cube = props.cube
     const color = props.color || "royalblue"
@@ -296,7 +300,8 @@ export function OutlineBoxComponentTextOnly(props: {
     let ratio = 0
     //  calc some LOD
 
-    distance = props.cameraPosition.distanceTo(new THREE.Vector3(center[0], center[1], center[2]))
+    // the problem here is that all these would redraw when the cameraPosition
+    distance = 100// props.cameraPosition.distanceTo(new THREE.Vector3(center[0], center[1], center[2]))
     // console.log("distance to cube ", cube, " is ", distance)
     // const width = (2 ** cube.p)  // make the text bigger as we get further away, so it remains legible. This is a hacky way to do LOD for text.
     ratio = width / distance
@@ -318,7 +323,7 @@ export function OutlineBoxComponentTextOnly(props: {
                 position={[center[0], cube.y, center[2]]}
                 rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
                 fontSize={markerSize * 2}>
-                {/* key={props.indexBase + 1} NEVER ADD A KEY TO A TEXT*/}
+                {/* key={props.indexBase + 1} NEVER ADD A KEY TO A TEXT It wyll end up IN the text.*/}
                 {label}
             </Text>
 

@@ -8,17 +8,19 @@ import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'; // just a map.
 // we should share the same cache that the BuildVisibleTreeStatus's uses, so we can share the same tree?.
 // That's not clear yet. In the end it's just a list of leaves, and then a list of groups.
 
-export type WorldDisplayState = {
+// flatten it.It's out of control.
+export type XXWorldDiXXXsplayState = {
 
     worldName: string
 
-    previousCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
-    timeSinceLastCameraMovement: number // = 0
-    currentCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
+    // put these pack later. 
+    // previousCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
+    // timeSinceLastCameraMovement: number // = 0
+    // currentCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
 
-    // what does it mean to have two copies of THIS gadget? 
+    // what does it mean to have two copies of THIS gadget? It starts clean every time so what's the point in saving it?
     // every instance of MainWorldDisplay should have it's own copy of the BuildVisibleTreeStatus, but they should share the same cache.
-    theGlobalTree: bvts.BuildVisibleTreeStatus // = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+    // theGlobalTree: bvts.BuildVisibleTreeStatus // = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
 
     uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
     showOriginAxis: boolean // = true should we pass these around as props or just have them in local storage? 

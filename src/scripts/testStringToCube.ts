@@ -2,7 +2,7 @@
 
 export { };
 
-import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
+import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 
 
 // Very basic tests of the StringToCube and CubeToString functions and associated utilities.
@@ -12,6 +12,37 @@ import * as oct from '../knotfree-ts-lib/3d/UrlOctTree'
 // you SUCK import { expect, test } from 'vitest' one more node link error and I'll scream
 
 import assert from 'node:assert/strict';
+
+{
+    const cubeStr = "3n2u5w1p"
+    const [cube, error] = oct.AddressStringToCube(cubeStr)
+    assert.equal(error, null)
+    assert.equal(cube.world, "")
+    assert.equal(cube.x, 6)
+    assert.equal(cube.y, 4)
+    assert.equal(cube.z, -10)
+    assert.equal(cube.p, 1)
+    assert.equal(cube.whichParent, undefined)
+    assert.equal(oct.CubeToString(cube)[0], "-3n2u5w1p")
+}
+
+{
+    const cubeStr = "a-3n2u5w1p"
+    const [cube, error] = oct.AddressStringToCube(cubeStr)
+    assert.notEqual(error, null)   
+}
+
+
+{
+    const cubeStr = "3n2u5w1p.vr"
+    const [cube, error] = oct.AddressStringToCube(cubeStr)
+    assert.notEqual(error, null)   
+}
+{
+    const cubeStr = "3n2u5w1p-1.zyx"
+    const [cube, error] = oct.AddressStringToCube(cubeStr)
+    assert.notEqual(error, null)   
+}
 
 {
     const cubeStr = "testmain-3n2u5w1p"

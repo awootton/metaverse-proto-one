@@ -8,7 +8,6 @@ export const sss = "hello world"
 
 // THIS FAILS:  localStorage.setItem('user_token', 'xyz123');
 
-
 // Is this the same API? It doesn't persist but is it the same API?
 // yes, note that it doesn't persist. I already lost half a day to crappy libs for this. 
 export class MyLocalStorage {
