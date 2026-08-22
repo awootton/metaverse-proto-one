@@ -1,8 +1,7 @@
 
 import * as THREE from 'three';
 
-import { CacheIntf } from './CacheIntf';
-import * as oct from './DomainNameOctTree'
+import * as oct from './Dns8Tree'
 // import * as atwdns from './DnsTypes'
 import { error } from 'console';
 import * as utils from './utils';

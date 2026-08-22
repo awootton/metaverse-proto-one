@@ -6,6 +6,8 @@ export type Props = {
 
 }
 
+// This is NOT the canvas you're looking for.
+
 const Canvas = (props: Props) => {
 
   // const canvasRef = useRef(null)

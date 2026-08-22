@@ -23,7 +23,7 @@ console.log("priv", priv)
 
 // sends a command to the knotfree.io API, which will execute it on the server. 
 export async function sendNameserviceCommand(command: string, domainName: string): Promise<string> {
-    let nonce = utils.randomString(24)
+    let nonce = utils.RandomString(24)
     // console.log('reserve new nonce', nonce)
 
     // Fetch public key from API

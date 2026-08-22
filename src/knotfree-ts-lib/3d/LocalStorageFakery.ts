@@ -2,7 +2,7 @@
 
 export const sss = "hello world"
 
-// they lie. They said it was in here. Fuckers. 
+// they lie. They said it was in here. Fvckers. 
 // If you are running Node.js v25 or newer, the Web Storage API is built directly into the runtime. You do not need to install any packages.
 // I am running v26.0.0 so wtf. What's the secret? 
 
@@ -10,6 +10,7 @@ export const sss = "hello world"
 
 // Is this the same API? It doesn't persist but is it the same API?
 // yes, note that it doesn't persist. I already lost half a day to crappy libs for this. 
+
 export class MyLocalStorage {
 
     private storage: Map<string, string>;
@@ -45,7 +46,7 @@ export class MyLocalStorage {
 }
 
 // Note that the node version of localStorage is not persistent, so it will not retain data between runs of your application.
-// 
+// But, it's simple and it works. 
 export const ourLocalStorage = (typeof window !== "undefined" && window !== null) ? window.localStorage : new MyLocalStorage()
  
 

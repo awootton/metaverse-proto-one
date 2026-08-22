@@ -9,6 +9,7 @@ import { useLoader, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 import { PointerLockControls } from "@react-three/drei";
 
+// and old nav thing
 
 export const CameraWalker: React.FC = () => {
 

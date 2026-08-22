@@ -1,6 +1,6 @@
 // import * as dns from "dns/promises" NOPE. We can't use this.
 
-import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/Dns8Tree'
 
 import * as octload from '../../knotfree-ts-lib/3d/OctTreeLoaders'
 import * as atwdns from '../../knotfree-ts-lib/3d/DnsTypes'
@@ -12,13 +12,39 @@ import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { GetTheKeys } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
 
+export {}
+
 // Don't use this. Use the reserveSmallPlots.ts script instead. It's newer
 
-// command to execute. in a javascript debug terminal: npx ts-node src/scripts/tryingToReserve.ts
+// command to execute. in a javascript debug terminal: npx ts-node src/scripts/buildingTestMain/tryingToReserve.ts
 
 // a primitive version that reserved these: 
 // const property = "testmain-0n0u0e5p" // my old buddy. 32 by 32 meters.
 // const acrossToTheWest = "testmain-0n0u1w5p" // 
+
+
+async function askQuestion1(q: string): Promise<string> {
+    // Create the interface link to standard I/O
+    const rl = readline.createInterface({ input, output });
+
+    try {
+        // Prompt the user and wait for their answer
+        const answer = await rl.question(q);
+        return answer;
+    } finally {
+        // Always close the interface to release the terminal stream
+        rl.close();
+    }
+}
+
+const yn = await askQuestion1("Can I ask a question? (y/n) ")
+console.log("You answered:", yn)
+console.log("You answered:", yn)
+console.log("You answered:", yn)
+console.log("You answered:", yn)
+console.log("You answered:", yn)
+
+process.exit(0)
 
 // is this a script or do the inputs come in env vars?
 const args = process.argv.slice(2);

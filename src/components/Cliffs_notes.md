@@ -1,14 +1,21 @@
 
 ## Cliffs notes:
 
+A really bad outline, always running behind. Just like my brain!!
+
 Also see src/knotfree-ts-lib/avatars/README.md
 
 App 
 
     showingLeaves, setShowingLeaves
-    pubsub.subscribe("ShowingLeavesChanges", "App"+appDisplayState.uniqueId, 
+    pubsub.subscribe("ShowingLeavesChanges", "App", 
+            I think that's it now. Nobody else subscribes to ShowingLeavesChanges
 
-    export type WorldDisplayState = { antique
+        ToggleOnlyShowOutlineBoxes publushes zero to force a redraw for xray mode.
+        It needs to also force a localTraverseTheTree to bring them back instead of waiting 1/4 sec.
+        
+
+    export type WorldDisplayState = { 
         worldName: string
 
         previousCameraPosition: 
@@ -19,13 +26,20 @@ App
         
         onlyShowOutlineBoxes: boolean
         showOriginAxis: boolean 
+    }
 
+    // how do we turn on and off the demoProperties display?
+          pubsub.publish("DemoPropertiesChanges", utils.randomString(24)) }
+                in OrbitPropertyDialog2
+           pubsub.publish("DemoPropertiesChanges", utils.randomString(24)) }
+                in the dialog confirm in App.tsx
+           and the two antiques in  OrbitPropertyDialog     
 
     AppCanvas (leaves)
 
         export type AppCanvasProps = {
             state: WorldDisplayState
-            shouldShowMainWorldDisplay: boolean
+          // gone  shouldShowMainWorldDisplay: boolean change to UseOrbitalControls
             showingLeaves: oct.TreeStatus[]
         }
 
@@ -36,7 +50,6 @@ App
         use frame on camera
             has to be in canvas
                 calls TraverseTheTree
-
 
         MainWorldDisplay(leaves) 
 
@@ -54,12 +67,22 @@ App
 
 
 MainWorldDisplay:
-    does a ReCalcTheDemoProperties()
+    does a ReCalcTheDemoProperties() after DemoProperties 
         trims demo spaces against known properties
 
 MakeBoxesForDemoSpaces has:
 
-    type MakeBoxesForDemoSpacesProps = {
+    MakeBoxesForDemoSpacesProps
+
+    MakeAuxGroupsFromShowingLeaves renderers
+
+    ReCalcTheDemoProperties in main world  ReCalcTheDemoProperties  filters out the owned properties.
+
+    type 
+    
+            MakeBoxesForDemoSpacesProps
+
+
     worldDisplayState: WorldDisplayState
     demoCubeList: oct.Cube[]  .
 

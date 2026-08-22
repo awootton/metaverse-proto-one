@@ -1,23 +1,15 @@
 
 import * as THREE from 'three';
 
-import { CacheIntf } from './CacheIntf';
-import * as oct from './DomainNameOctTree'
-import { error } from 'console';
+import * as oct from './Dns8Tree'
 
-// import * as octload from './OctTreeLoaders'
-import * as utils from './utils';
-// import { BatchFetchAndMergeControllerSlowest } from './BatchFetchAndMergeController';
 import * as fetchAndMerge from './BatchFetchAndMergeController'
 import * as loaders from './OctTreeLoaders'
 import * as dnstypes from './DnsTypes'
-import { truncate } from 'fs/promises';
-
 
 // BuildVisibleTreeStatus aka bvts in the logs.
 export class BuildVisibleTreeStatus {
 
-    cubeCache: CacheIntf
     minRatioToBeVisible = 0
     // We should calculate this based on the camera FOV and the size of the cubes at each level. 
     // Later, at render time we should check if the cubes are actually in the frustum and if not, we can skip rendering them.
@@ -26,8 +18,7 @@ export class BuildVisibleTreeStatus {
     public showingLeaves: Map<string, oct.TreeStatus>
 
     // 2. Constructor to initialize properties
-    constructor(cubeCache: CacheIntf) {
-        this.cubeCache = cubeCache;
+    constructor() {
         this.showingLeaves = new Map<string, oct.TreeStatus>();
         const degrees = 0.5
         const angle = degrees * Math.PI / 180 // convert degrees to radians
@@ -83,7 +74,7 @@ export class BuildVisibleTreeStatus {
                 const visible = this.isCubeVisible(aCube, cameraPos)
                 if (visible) {
                     const childKey = oct.CubeToString(aCube)[0] // and it's visible.
-                    let childStatus = this.cubeCache.get(childKey)
+                    let childStatus = oct.GetTreeStatusFromCache(childKey)
                     if (!childStatus) {
                         // eg 'testmain-0n0u0e5p'
                         // we know it exists. Let's just fake it
@@ -101,7 +92,7 @@ export class BuildVisibleTreeStatus {
                         // we should look up the children bits, but we don't care about that because it's a leaf.
                         // console.log("bvts Error: childStatus not found in cache for child that exists and is visible. ", oct.CubeToString(aCube)[0])
                         // return new Error("bvts Error: childStatus not found in cache for child that exists and is visible. " + oct.CubeToString(aCube)[0])
-                        this.cubeCache.set(childKey, fakeStatus) // optionally add the fake status to the cache
+                        oct.SetTreeStatusInCache(childKey, fakeStatus) // optionally add the fake status to the cache
                         childStatus = fakeStatus
                     }
                     this.showingLeaves.set(childKey, childStatus)
@@ -113,6 +104,7 @@ export class BuildVisibleTreeStatus {
                 const visible = this.isCubeVisible(aCube, cameraPos) // if exists and is visible.
                 if (visible) {
                     // recurse on the subtree 
+                    // We don't need the { ...aCube, whichParent: i } construct. FIXME: atw
                     const subKeyCube = { ...aCube, whichParent: i } as oct.Cube
                     const subTreeKey = oct.CubeToString(subKeyCube)[0] // eg testmain-0n0u0e15p-0 
                     // the existance of 16-p-0 implies there's a subtree here before we even look up anything. 
@@ -122,7 +114,7 @@ export class BuildVisibleTreeStatus {
                     // }
 
                     // if we've been here before then subTreeKey is in the cache and knows the bits
-                    let subTreeStatus = this.cubeCache.get(subTreeKey)
+                    let subTreeStatus = oct.GetTreeStatusFromCache(subTreeKey)
                     // else let's just calc the childbits for it right now and that will load it.
                     if (subTreeStatus == undefined || subTreeStatus?.childrenBits === -1) {
                         const [childBits, childErr] = await calcChildrenBits(subKeyCube, subTreeKey, -1) // 
@@ -133,7 +125,7 @@ export class BuildVisibleTreeStatus {
                         // console.log(oct.DisplayChildBits(childBits, subTreeKey))
 
                         // there really should be some freaking children here unless the existance of the //  
-                        subTreeStatus = this.cubeCache.get(subTreeKey)
+                        subTreeStatus = oct.GetTreeStatusFromCache(subTreeKey)
                         // the calc of the children bits doesn't mean we loaded that parent yet. But, we'll need it.
                         // to hold the child bits. So, if we don't have it, let's just make one.
                         if (!subTreeStatus) {
@@ -151,6 +143,7 @@ export class BuildVisibleTreeStatus {
                                 error: null,
                                 addresses: []
                             }
+                            oct.SetTreeStatusInCache(subTreeKey, fakeStatus) // add the fake status to the cache
                             subTreeStatus = fakeStatus
                         }
                         // and, we know it's childBits already.
@@ -184,6 +177,7 @@ export class BuildVisibleTreeStatus {
         const octants: { name: string, cube: oct.Cube }[] = []
         // I'm not sure if these are in the right order.  
         // Maybe just generate the names and then get the cubes from the names?
+        // there's anothway to do this. FIXME: atw.
         let index = 0
         for (let z = 0; z >= -1; z--) {
             for (let y = 0; y >= -1; y--) {
@@ -230,7 +224,7 @@ export class BuildVisibleTreeStatus {
                 error: null,
                 addresses: []
             }
-            this.cubeCache.set(octant.name, treeStatus) // even if no children?
+            oct.SetTreeStatusInCache(octant.name, treeStatus) // even if no children?
             if (childBits !== 0) {
                 const visible = this.isCubeVisible(octant.cube, cameraPos)
                 if (visible) {
@@ -311,13 +305,13 @@ export class BuildVisibleTreeStatus {
                     const ts = listOfXyzleaves[i]
                     // get it from the cache and fill in the groupId.
                     const answerText = dnstypes.GetAnswer(response)[1]
-                    const tstmp = this.cubeCache.get(ts.name)
+                    const tstmp = oct.GetTreeStatusFromCache(ts.name)
                     if (!tstmp) {
                         console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", ts.name)
                         continue
                     }
                     fetchAndMerge.FillInTxtLogic(answerText, tstmp)
-                    this.cubeCache.set(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
+                    oct.SetTreeStatusInCache(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
                     // put this in the child bits cache or else put the cubeCache in localStorage. TODO: atw
                     // now, the same for the .vs ones.
                     const key = "meta_group_id." + tstmp.name
@@ -358,13 +352,13 @@ export class BuildVisibleTreeStatus {
                     const answerText = dnstypes.GetAnswer(response)[1]
                     // console.log("bvts got answer for ", ts.name, ": ", answerText)
                     // topic not found errid=bvBbhJawYXIMWsxJOWHt is normal and common but not ALWAYS.
-                    const tstmp = this.cubeCache.get(ts.name)
+                    const tstmp = oct.GetTreeStatusFromCache(ts.name)
                     if (!tstmp) {
                         console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", ts.name)
                         continue
                     }
                     fetchAndMerge.FillInTxtLogic(answerText, tstmp)
-                    this.cubeCache.set(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
+                    oct.SetTreeStatusInCache(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
                     // put this in the child bits cache or else put the cubeCache in localStorage. TODO: atw
 
                     const key = "meta_group_id." + tstmp.name
@@ -438,7 +432,7 @@ export class BuildVisibleTreeStatus {
             //             const [cubeNameFromUrl, err] = oct.CubeToString(needGroupIdLookup[i])
             //             cubeName = cubeNameFromUrl
             //         }
-            //         const treeStatus = this.cubeCache.get(cubeName)
+            //         const treeStatus = oct.GetTreeStatusFromCache(cubeName)
             //         if (!treeStatus) {
             //             console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", cubeName)
             //             continue
@@ -457,13 +451,13 @@ export class BuildVisibleTreeStatus {
             //                 grp.grp = utils.randomString(24)
             //             }
             //             treeStatus.groupId = grp
-            //             this.cubeCache.set(treeStatus.name, treeStatus)
+            //             oct.SetTreeStatusInCache(treeStatus.name, treeStatus)
             //         } catch (err) {
             //             const defaultgrp = {
             //                 grp: utils.randomString(24) //
             //             } as oct.GroupTextParameters
             //             treeStatus.groupId = defaultgrp
-            //             this.cubeCache.set(treeStatus.name, treeStatus)
+            //             oct.SetTreeStatusInCache(treeStatus.name, treeStatus)
             //         }
             //     }
             // }
@@ -518,7 +512,7 @@ export class BuildVisibleTreeStatus {
         // const getMe = []
         // let i = 0
         // for (const octant of octants) {
-        //     let treeStatus = this.cubeCache.get(octant.name)
+        //     let treeStatus = oct.GetTreeStatusFromCache(octant.name)
         //     if (!treeStatus) {
         //         getMe.push(octant.cube)
         //     } else {
@@ -549,9 +543,9 @@ export class BuildVisibleTreeStatus {
                     console.error("Error generating parentKey for cube: ", err)
                     return err
                 }
-                // const parentStatus = this.cubeCache.get(parentKey)
+                // const parentStatus = oct.GetTreeStatusFromCache(parentKey)
                 // always 
-                // const parentStatus = this.cubeCache.get(parentKey)
+                // const parentStatus = oct.GetTreeStatusFromCache(parentKey)
                 // if (!parentStatus || parentStatus.childrenBits === -1) 
                 { // this is a little wasteful. A lot of searching for things that don't exist.
                     // But it will give us which of the level 16 octants exist. Some don't.
@@ -583,7 +577,7 @@ export class BuildVisibleTreeStatus {
                                     error: null,
                                     addresses: []
                                 }
-                                this.cubeCache.set(childKey, fakeStatus)
+                                oct.SetTreeStatusInCache(childKey, fakeStatus)
                                 knownLevel16Parents.push(fakeStatus)
                                 // Ta Da! We have a parent treeStatus for this child in the cache. We can now recurse into it later.
                                 // and we used the child bits cache instead of callinf TwoWayLookupAndMerge for the parent. This is a big win.
@@ -591,7 +585,7 @@ export class BuildVisibleTreeStatus {
 
                             // now we should have the child bits in the cache for the parent. 
                             // let's get the octant treeStatus from the cache.
-                            // const octantStatus = this.cubeCache.get(oct.CubeToString({ ...parentCube, whichParent: octantParents.indexOf(parentCube) })[0])
+                            // const octantStatus = oct.GetTreeStatusFromCache(oct.CubeToString({ ...parentCube, whichParent: octantParents.indexOf(parentCube) })[0])
                             // if (octantStatus) {
                             //     result.push(octantStatus)
                             // } else {
@@ -603,7 +597,7 @@ export class BuildVisibleTreeStatus {
                     console.log("bvts done walking bits from 8 superparets knownLevel16Parents after processing parent cube ", parentKey, ": ", knownLevel16Parents.map(ts => ts.name))
                     //  else {
                     //     // parentStatus is already in the cache and has childrenBits, so we can get the octant treeStatus from the cache.
-                    //     const octantStatus = this.cubeCache.get(oct.CubeToString({ ...parentCube, whichParent: octantParents.indexOf(parentCube) })[0])
+                    //     const octantStatus = oct.GetTreeStatusFromCache(oct.CubeToString({ ...parentCube, whichParent: octantParents.indexOf(parentCube) })[0])
                     //     if (octantStatus) {
                     //         result.push(octantStatus)
                     //     } else {
@@ -632,7 +626,7 @@ export class BuildVisibleTreeStatus {
             }
             for (const treeStatus of knownLevel16Parents) {
                 treeStatus.isParent = true // we just say so.
-                this.cubeCache.set(treeStatus.name, treeStatus)
+                oct.SetTreeStatusInCache(treeStatus.name, treeStatus)
                 // which child is it? 
                 const [parentCube, index] = oct.GetParentCubeWithOcttreeIndex(treeStatus.cube)
                 // const lastChar = treeStatus.name[treeStatus.name.length - 1]
@@ -679,14 +673,14 @@ export class BuildVisibleTreeStatus {
                             // it's 'testmain-0n0u0e15p-0' it should be in the cache when we get there. 
                             // how did we know there's a child here? Because the child bits say it's a parent. How.
                             // We will find out more about it when we recurse into it.
-                            let subTreeStatus = this.cubeCache.get(subTreeKey) //  
+                            let subTreeStatus = oct.GetTreeStatusFromCache(subTreeKey) //  
                             if (!subTreeStatus) {
                                 const [childBits, err2] = await calcChildrenBits(subTreeCube, subTreeKey, -1) // always.
                                 if (err2) {
                                     console.error("bvts Error calculating children bits for subtree ", subTreeKey, err2)
                                     return err2
                                 }
-                                subTreeStatus = this.cubeCache.get(subTreeKey) // calcChildrenBits will have cached it
+                                subTreeStatus = oct.GetTreeStatusFromCache(subTreeKey) // calcChildrenBits will have cached it
                                 if (!subTreeStatus) {
                                     console.error("bvts Error: subTreeStatus not found in cache for child that is a parent and is visible. ", subTreeKey)
                                     return new Error("bvts Error: subTreeStatus not found in cache for child that is a parent and is visible. " + subTreeKey)
@@ -704,7 +698,7 @@ export class BuildVisibleTreeStatus {
                         } else if (oct.ChildExists(treeStatus.childrenBits, j)) {
                             const childCube = oct.GetChildCube(treeStatus.cube, j)
                             const childKey = oct.CubeToString(childCube)[0]
-                            const childStatus = this.cubeCache.get(childKey)
+                            const childStatus = oct.GetTreeStatusFromCache(childKey)
                             if (!childStatus) {
                                 console.error("bvts Error: childStatus not found in cache for child that exists and is visible. ", oct.CubeToString(childCube)[0])
                                 return new Error("bvts Error: childStatus not found in cache for child that exists and is visible. " + oct.CubeToString(childCube)[0])
@@ -761,11 +755,11 @@ export class BuildVisibleTreeStatus {
 
                 //     // these should have their groupIds filled in now. We can check the cache for them.
                 //     for (const treeStatus of result) {
-                //         const existingTree = this.cubeCache.get(treeStatus.name)
+                //         const existingTree = oct.GetTreeStatusFromCache(treeStatus.name)
                 //         if (existingTree) {
                 //             existingTree.groupId = treeStatus.groupId
                 //             // do we have to put it back or can we just modify the existing object? I think we can just modify the existing object because it's a reference.
-                //             this.cubeCache.set(existingTree.name, existingTree)
+                //             oct.SetTreeStatusInCache(existingTree.name, existingTree)
                 //         } else {
                 //             console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", treeStatus.name)
                 //         }
@@ -817,13 +811,13 @@ export class BuildVisibleTreeStatus {
                             const ts = listOfXyzleaves[i]
                             // get it from the cache and fill in the groupId.
                             const answerText = dnstypes.GetAnswer(response)[1]
-                            const tstmp = this.cubeCache.get(ts.name)
+                            const tstmp = oct.GetTreeStatusFromCache(ts.name)
                             if (!tstmp) {
                                 console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", ts.name)
                                 continue
                             }
                             fetchAndMerge.FillInTxtLogic(answerText, tstmp)
-                            this.cubeCache.set(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
+                            oct.SetTreeStatusInCache(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
                             // put this in the child bits cache or else put the cubeCache in localStorage. TODO: atw
                             // now, the same for the .vs ones.
                             const key = "meta_group_id." + tstmp.name
@@ -864,13 +858,13 @@ export class BuildVisibleTreeStatus {
                             const answerText = dnstypes.GetAnswer(response)[1]
                             // console.log("bvts got answer for ", ts.name, ": ", answerText)
                             // topic not found errid=bvBbhJawYXIMWsxJOWHt is normal and common but not ALWAYS.
-                            const tstmp = this.cubeCache.get(ts.name)
+                            const tstmp = oct.GetTreeStatusFromCache(ts.name)
                             if (!tstmp) {
                                 console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", ts.name)
                                 continue
                             }
                             fetchAndMerge.FillInTxtLogic(answerText, tstmp)
-                            this.cubeCache.set(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
+                            oct.SetTreeStatusInCache(tstmp.name, tstmp) // back in the cache, as if that makes a difference. 
                             // put this in the child bits cache or else put the cubeCache in localStorage. TODO: atw
 
                             const key = "meta_group_id." + tstmp.name
@@ -945,7 +939,7 @@ export class BuildVisibleTreeStatus {
                 //             const [cubeNameFromUrl, err] = oct.CubeToString(needGroupIdLookup[i])
                 //             cubeName = cubeNameFromUrl
                 //         }
-                //         const treeStatus = this.cubeCache.get(cubeName)
+                //         const treeStatus = oct.GetTreeStatusFromCache(cubeName)
                 //         if (!treeStatus) {
                 //             console.error("bvts Error: treeStatus not found in cache for cube that has a groupId TXT record. ", cubeName)
                 //             continue
@@ -964,13 +958,13 @@ export class BuildVisibleTreeStatus {
                 //                 grp.grp = utils.randomString(24)
                 //             }
                 //             treeStatus.groupId = grp
-                //             this.cubeCache.set(treeStatus.name, treeStatus)
+                //             oct.SetTreeStatusInCache(treeStatus.name, treeStatus)
                 //         } catch (err) {
                 //             const defaultgrp = {
                 //                 grp: utils.randomString(24) //
                 //             } as oct.GroupTextParameters
                 //             treeStatus.groupId = defaultgrp
-                //             this.cubeCache.set(treeStatus.name, treeStatus)
+                //             oct.SetTreeStatusInCache(treeStatus.name, treeStatus)
                 //         }
                 //     }
                 // }
@@ -1001,10 +995,10 @@ export class BuildVisibleTreeStatus {
 // calcChildrenBits doesn't live in the class anymore. It's isolated. 
 // It's hard coded with oct.gCubeCache
 
-// Example: The calcChildrenBits of testmain-0n0u1w7p-4 are actually the bits of the 4th subspace of 
-//  the 7p, which are all 6p's 
+// Example: The calcChildrenBits of testmain-0n0u1w7p-2 are actually the bit for the 2nd subspace of 
+//  the 7p. The children of a 7p are all 6p's 
 //  if we want to check for leaves they would be the 8 subcubes of THAT 6p, which would be 5p's.
-//  It's hard to think about sometimes. Maybe I did it wrong? ! ?
+//  It's hard to think about sometimes. Am I doing it wrong?
 export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBits: number): Promise<[number, Error | null]> {
 
     if (previousBits === -1) {
@@ -1014,6 +1008,7 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
             //  console.log("bvts calcChildrenBits hit testmain-0n0u1w16p-4, which is a known parent. This is a good sign. We should see this in the logs and it should not cause any errors. If we don't see this in the logs, or if it causes an error, then something is wrong with our tree traversal logic.")
         }
 
+        // this could be eliminated. It was a stupid optimization at the time and it still is.
         if (cube.whichParent !== undefined) {
             cube = oct.GetChildCube(cube, -1) // the space we care about.
         }
@@ -1086,7 +1081,7 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
             const nodename = spacename + "-" + i // this is the naming convention for the subtrees. It's a bit gross but it works.
             // console.log("bvts checking cache nodename ", nodename)
             name2indexMap.set(nodename, i)
-            const tmp = oct.gTreeStatusCache.get(nodename)
+            const tmp = oct.GetTreeStatusFromCache(nodename)
             if (!tmp) {
                 const acube = oct.StringToCube(nodename)[0] // todo: check err
                 needToLookUp.push(acube)
@@ -1099,7 +1094,7 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
             const childCube = oct.GetChildCube(cube, i)
             const childKey = oct.CubeToString(childCube)[0] // check error
             name2indexMap.set(childKey, i)
-            const tmp = oct.gTreeStatusCache.get(childKey)
+            const tmp = oct.GetTreeStatusFromCache(childKey)
             if (!tmp) {
                 needToLookUp.push(childCube)
             } else {
@@ -1163,11 +1158,11 @@ export async function calcChildrenBits(cube: oct.Cube, Xname: string, previousBi
                 return [-1, new Error(`bvts Error: child or node missing for index ${i}`)]
             }
             if (child.found) {
-                oct.gTreeStatusCache.set(child.name, child)
+                oct.SetTreeStatusInCache(child.name, child)
                 madeChildBits = oct.SetIsXyz(madeChildBits, i, child.wasXYZ)
             }
             if (node.found) {
-                oct.gTreeStatusCache.set(node.name, node)
+                oct.SetTreeStatusInCache(node.name, node)
                 madeChildBits = oct.SetIsXyz(madeChildBits, i, node.wasXYZ)
             }
             if (child.found && node.found) {
@@ -1210,7 +1205,7 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
         const nodename = spacename + "-" + i // this is the naming convention for the subtrees. It's a bit gross but it works.
         if (oct.IsParent(aCachedEntry.childrenBits, i)) {
             const acube = oct.StringToCube(nodename)[0] // todo: check err
-            const tmp = oct.gTreeStatusCache.get(nodename)
+            const tmp = oct.GetTreeStatusFromCache(nodename)
             if (!tmp) {
                 const newTreeStatus: oct.TreeStatus = {
                     name: nodename,
@@ -1224,12 +1219,12 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
                     error: null
                 }
                 // FAKED console.log("bvts DoNameLookupsForCachedChildBits adding to cache: ", nodename)
-                oct.gTreeStatusCache.set(nodename, newTreeStatus)
+                oct.SetTreeStatusInCache(nodename, newTreeStatus)
             }
         } else if (oct.ChildExists(aCachedEntry.childrenBits, i)) {
             const childCube = oct.GetChildCube(oct.StringToCube(spacename)[0], i)
             const childKey = oct.CubeToString(childCube)[0] // check error
-            const tmp = oct.gTreeStatusCache.get(childKey)
+            const tmp = oct.GetTreeStatusFromCache(childKey)
             if (!tmp) {
                 const newTreeStatus: oct.TreeStatus = {
                     name: childKey,
@@ -1243,7 +1238,7 @@ export function DoNameLookupsForCachedChildBits(aCachedEntry: oct.ChildBitsCache
                     error: null
                 }
                 // FAKED console.log("bvts DoNameLookupsForCachedChildBits adding to cache: ", childKey)
-                oct.gTreeStatusCache.set(childKey, newTreeStatus)
+                oct.SetTreeStatusInCache(childKey, newTreeStatus)
             }
         }
     }

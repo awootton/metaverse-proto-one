@@ -4,7 +4,10 @@ import * as THREE from 'three';
 import React from 'react';
 
 import { DefaultCameraPosition } from '../components/AppCanvas'
-import { FlatCompass } from './flatCompass';
+
+
+// import { FlatCompass } from './flatCompass';
+// import { flatCompass } from './FlatCompass';
 
 
 // Define the type for the camera reference
@@ -108,9 +111,9 @@ export function NavigationControls1(props: NavigationControlsProps) {
                     <button style={styles} onClick={() => props.cameraRef.current?.home()}>Home (H)</button>
                 </div>
             </div>
-            <div style={{ transform: 'scale(0.25)', position: 'absolute', top: '10px', right: '10px' }}>
-                <FlatCompass rotationAngle={compassAngle} />
-            </div>
+            {/* <div style={{ transform: 'scale(0.25)', position: 'absolute', top: '10px', right: '10px' }}>
+                <flatCompass rotationAngle={compassAngle} />
+            </div> */}
         </>
     );
 }
@@ -203,24 +206,24 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
         },
     };
 
-    let previousChangeCount = -2;
+    // let previousChangeCount = -2;
 
-    const camera = useThree(state => state.camera)
-    function calculateCompassAngle() {
+    // const camera = useThree(state => state.camera)
+    // function calculateCompassAngle() {
 
-        if (actions.changeCount !== previousChangeCount) {
+    //     if (actions.changeCount !== previousChangeCount) {
 
-            previousChangeCount = actions.changeCount;
+    //         previousChangeCount = actions.changeCount;
 
-            const v = new THREE.Vector3();
-            const camDir = camera.getWorldDirection(v);
+    //         const v = new THREE.Vector3();
+    //         const camDir = camera.getWorldDirection(v);
 
-            // Calculate the horizontal angle (azimuth) relative to the Z-axis
-            const angle = Math.atan2(camDir.z, camDir.x);
+    //         // Calculate the horizontal angle (azimuth) relative to the Z-axis
+    //         const angle = Math.atan2(camDir.z, camDir.x);
 
-            actions.compassAngle = angle;
-        }
-    }
+    //         actions.compassAngle = angle;
+    //     }
+    // }
 
     // Expose methods to interface
     useEffect(() => {
@@ -293,6 +296,7 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
 
     // Frame loop interpolation
     useFrame((state) => {
+        const camera = state.camera;
         state.camera.position.lerp(targetPosition.current, 0.1);
 
         camera.rotation.order = 'YXZ'; // vitally important. Otherwise the rotations will be applied in the wrong order and you'll get gimbal lock and other weirdness.
@@ -300,7 +304,7 @@ export function NavigationCamera(props: NavigationCameraControlsProps) {
         state.camera.rotation.y = THREE.MathUtils.lerp(state.camera.rotation.y, targetRotationY.current, 0.1);
         state.camera.rotation.x = THREE.MathUtils.lerp(state.camera.rotation.x, targetRotationX.current, 0.1);
 
-        calculateCompassAngle()
+        //calculateCompassAngle()
     });
 
     return null;

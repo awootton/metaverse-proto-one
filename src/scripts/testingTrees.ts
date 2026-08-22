@@ -2,10 +2,9 @@
 
 // import * as dns from "dns/promises" NOPE. We can't use this.
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
 import * as atwdns from '../knotfree-ts-lib/3d/DnsTypes'
-import * as namesapi from '../knotfree-ts-lib/3d/NamesApi'
 
 import assert from 'node:assert/strict';
 

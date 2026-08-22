@@ -1,9 +1,5 @@
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
-import * as octload from '../knotfree-ts-lib/3d/OctTreeLoaders'
-import * as atwdns from '../knotfree-ts-lib/3d/DnsTypes'
-import * as namesapi from '../knotfree-ts-lib/3d/NamesApi'
-
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import assert from 'node:assert/strict';
 
 // the idea is that we have a list of known properties, as cubes, 
@@ -11,7 +7,6 @@ import assert from 'node:assert/strict';
 // we want to toss the owned cubes into AN octtree and then use that to cull the list of samples.
 
 // command me, master: npx ts-node src/scripts/testCubeIntesector.ts
-
 
 const knownCubes = "testmain-0n0u0e5p,testmain-2n0u5w2p,testmain-2n0u4w2p"
 const knownCubesList = knownCubes.split(",").map(c => {

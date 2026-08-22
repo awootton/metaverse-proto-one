@@ -7,22 +7,31 @@ import { Canvas } from '@react-three/fiber'
 import { MainWorldDisplay, MainWorldDisplayProps } from './MainWorldDisplay'
 import * as nav1 from './NavigatorTest1'
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus'
-import { Perf } from 'r3f-perf'
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import * as utils from '../knotfree-ts-lib/3d/utils'
 import { RootState, useFrame, useThree } from '@react-three/fiber'
-import * as pubsub from './PubSubTopicAndSubscribers'
+
+import * as sub from '../knotfree-ts-lib/avatars/PubSubSimple'
 import { useTexture } from '@react-three/drei'
 import { AsyncChannel } from './AsyncChannel'
 
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes';
 import axios from 'axios';
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'
 import { OrbitControls } from '@react-three/drei';
+import { mainpubsub } from '../App';
+import { CubeWithEdges } from './MiscCubeRenderElements'
 
 // 10 meters east and a little south, and 1.75 meters up, which is about eye level for an average person standing on the ground. 
 
 export const DefaultCameraPosition = new THREE.Vector3(-2, 1.75, 10);
+
+const cube0: oct.Cube = {
+    world: "testmain",
+    x: 0,
+    y: 0,
+    z: 0,
+    p: 0
+}
 
 export type AppCanvasProps = {
     // What do you REALLY need? 
@@ -32,19 +41,16 @@ export type AppCanvasProps = {
     // let's add a camera position here.
     initialCameraPosition: THREE.Vector3
 
-    // uniqueId: string it moves
     onlyShowOutlineBoxes: boolean // x-ray 
+    UseOrbitalControls: boolean
 
     showOriginAxis: boolean
 
-    shouldShowMainWorldDisplay: boolean // turn the whole thing off when it's hidden.
-    showingLeaves: oct.TreeStatus[] // add back later
+    showingLeaves: string[] // alwauys pass this in. 
 }
 
 // we have 3d we can have know the camera. We can trigger tree build and
 // publish.
-
-// Why can't this also be he orbit camvas? Only with different controls?
 
 export default function AppCanvas(props: AppCanvasProps) {
 
@@ -62,27 +68,17 @@ export default function AppCanvas(props: AppCanvasProps) {
 
     const cameraControlRef = useRef<nav1.ControlCameraRef>(null);
 
-    //const ourState = useRef<WorldDisplayState>(props.state)
-
-    // if (!props.shouldShowMainWorldDisplay) {
-    //     return (
-    //         <div>
-    //             main world canvas turned off.
-    //         </div>
-    //     )
-    // }
-
     const currentCameraPosition = new THREE.Vector3(-2, 1.75, 12);
 
     function showNavInCanvas() {
-        if (props.shouldShowMainWorldDisplay) {
+        if (!props.UseOrbitalControls) {
             return (
                 <nav1.NavigationCamera cameraRef={cameraControlRef} />
             )
         }
     }
     function showNavOutsizeCanvas() {
-        if (props.shouldShowMainWorldDisplay) {
+        if (!props.UseOrbitalControls) {
             return (
                 <nav1.NavigationControls1 cameraRef={cameraControlRef} />
             )
@@ -98,7 +94,7 @@ export default function AppCanvas(props: AppCanvasProps) {
 
         const size = 16
 
-        if (!props.shouldShowMainWorldDisplay) {
+        if (props.UseOrbitalControls) {
             return (
                 <OrbitControls
                     target={cam} // Set the target to the current camera position
@@ -120,16 +116,18 @@ export default function AppCanvas(props: AppCanvasProps) {
                 camera={{ position: currentCameraPosition }}
                 style={{ backgroundColor: '#cfecf7' }}
             >
-                <AppCanvasInTheCanvas {...props} />
+                <>
+                    <CubeWithEdges cube={cube0} />
 
-                {/* <nav1.NavigationCamera cameraRef={cameraControlRef} /> */}
-                {showNavInCanvas()}
+                    <AppCanvasInTheCanvas {...props} />
 
-                {showShowOrbitalControlInCanvas()}
+                    {showNavInCanvas()}
+
+                    {showShowOrbitalControlInCanvas()}
+                </>
 
             </Canvas >
 
-            {/* <nav1.NavigationControls1 cameraRef={cameraControlRef} /> */}
             {showNavOutsizeCanvas()}
         </>
     )
@@ -147,8 +145,23 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
     let farClip = 4000
 
     // let previousCameraPosition = new THREE.Vector3(1e999, 0, 0)
-    let timeWhenWeWillRecalc = Date.now()
-    let [previousCameraPosition, setPreviousCameraPosition] = useState<THREE.Vector3>(new THREE.Vector3(1e999, 0, 0));
+    //let timeWhenWeWillRecalc = Date.now()
+    // let [previousCameraPosition, setPreviousCameraPosition] = useState<THREE.Vector3>(new THREE.Vector3(1e999, 0, 0));
+
+    function calculateCompassAngle(state: RootState): number {
+
+        const camera = state.camera;
+
+        const v = new THREE.Vector3();
+        const camDir = camera.getWorldDirection(v);
+
+        // Calculate the horizontal angle (azimuth) relative to the Z-axis
+        const angle = Math.atan2(camDir.z, camDir.x);
+
+        const compassAngle = angle;
+        return compassAngle;
+    }
+
 
     // I presume this state is the one from the current canvas.
     // tris is triggering all the damn time. 
@@ -163,9 +176,14 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
         } else {
             return
         }
+
         if (doTheRecalc) {
 
-            console.log("TIME to recalc!!!: ")
+            const compassAngle = calculateCompassAngle(state)
+            // console.log("calculateCompassAngle got Compass angle: ", compassAngle)
+            sub.publish("CompassHeading", compassAngle)
+
+            // console.log("TIME to recalc!!!: ")
 
             // should we force a draw another way?
             // let's setup the camera far clip to be 5000.
@@ -179,8 +197,8 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
             if (doTheRecalc) {
                 const camera = state.camera
 
-                theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
-                farClip = camera.far
+                // theCameraPosition = [camera.position.x, camera.position.y, camera.position.z]
+                //  farClip = camera.far
 
                 let ourCameraPosition: THREE.Vector3 = camera.position.clone()
 
@@ -317,11 +335,14 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
 
     {/* <Stats /> */ }
 
+    // perf was minimal
+    // calls troika the font problem:   <Perf position="bottom-right" />
+    // and there's nothing to see but speed anyway.
+
     return (
         <>
-            <Perf position="bottom-right" minimal />
 
-            <ambientLight intensity={0.25} />
+            <ambientLight intensity={0.65} />
 
             <directionalLight // make these the same everywhere we use light.
                 position={[-10, 10, 5]}
@@ -334,26 +355,14 @@ function AppCanvasInTheCanvas(props: AppCanvasProps) {
 
             <MainWorldDisplay
 
-                // clean up this trash please.
-                //   worldName: string // like a traditional at this point.
-                //   // Everyone passes it and nobody uses it. 
-                //   uniqueId: string
-                //   onlyShowOutlineBoxes: boolean
-                //   showOriginAxis: boolean
-
-                //   showingLeaves: oct.TreeStatus[]
-                //   // add demo spaces here too.? No we get them from storage.
-                //  indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
-
-                //   // add demo spaces here too.? No we get them from storage.
-                //   indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
+                // add demo spaces here too.? No we get them from storage.
                 // what do we really NEED here?
                 worldName={props.worldName}
                 //   uniqueId={props.uniqueId}
                 onlyShowOutlineBoxes={props.onlyShowOutlineBoxes}
                 showOriginAxis={props.showOriginAxis}
                 showingLeaves={props.showingLeaves}
-              //  indexBase={1000}
+            //  indexBase={1000}
 
             />
         </>
@@ -569,7 +578,7 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3) 
     //     }
     // }
 
-    const treeGenerator = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+    const treeGenerator = new bvts.BuildVisibleTreeStatus()
 
     var err: Error | null = null
     const startTime = Date.now()
@@ -584,24 +593,13 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3) 
         console.error("Error in TraverseTheTree: FOUND NO WORLD TO RENDER!", err)
         //  when this happens we should set an error message somewhere TODO:
         // and then we pubish that there are no leaves to render.
-        pubsub.publish("ShowingLeavesChanges", [])
-        pubsub.publish("LoadingMessage", "World load failed.")
+        mainpubsub.publish("ShowingLeavesChanges", [])
+        mainpubsub.publish("LoadingMessage", "World load failed.")
 
     } else {
         // update cubes to render based on the visible tree. 
         // this is where we would trigger a re-render in React with the new cubes to render. 
         // null is correct. Means no error. 
-
-        // console.log("Cache: ", myMapCacheIntf.keys())
-
-        // const setOfLeavesAfter = new Set(state.theGlobalTree.showingLeaves.keys())
-        // if (setOfLeavesAfter.size === setOfLeavesBefore.size && Array.from(setOfLeavesAfter).every(leaf => setOfLeavesBefore.has(leaf))) {
-        //     // console.log("TraverseTheTree: The set of leaves is the same as before. No need to publish changes.")
-        //     // the problem I', having with this sometimes is that it shows nothng. It's unreleable. I think it's because the cache is not filled yet. So it finds nothing. Then later it finds something.
-        //     //return
-        // } else {
-        //     // console.log("TraverseTheTree: The set of leaves has changed. Publishing changes.")
-        // }
 
         // this is the result: 
         // console.log("TraverseTheTree Visible cubes: ", state.theGlobalTree.showingLeaves)
@@ -610,10 +608,14 @@ async function localTraverseTheTree(worldName: string, position: THREE.Vector3) 
         // too long to log: console.log("TraverseTheTree publishing ShowingLeavesChanges ", keyList.join(","))
 
         // This little fucker will let you publish the wrong type! 
-        const leavesToPublish: oct.TreeStatus[] = Array.from(treeGenerator.showingLeaves.values())
-        pubsub.publish("ShowingLeavesChanges", leavesToPublish)
-        pubsub.publish("LoadingMessage", "We good.")
-        // we must also inform the keeper of the Iframes. eeewww
+        //const leavesToPublish: string[] = Array.from(treeGenerator.showingLeaves.values())
+        const leafNamesToPublish: string[] = Array.from(treeGenerator.showingLeaves.keys())
+
+        // console.log("TraverseTheTree publishing ShowingLeavesChanges ", leafNamesToPublish.join(","))
+
+        mainpubsub.publish("ShowingLeavesChanges", leafNamesToPublish)
+        mainpubsub.publish("LoadingMessage", "We good.")
+        // we must also inform the keeper of the Iframes. - he's subscribing.
     }
 }
 

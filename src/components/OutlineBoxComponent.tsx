@@ -5,16 +5,16 @@ import * as THREE from 'three';
 // what does useMemo do?
 import React from 'react';
 import { Text } from '@react-three/drei';
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 import { Edges } from '@react-three/drei';
 import { useTexture } from '@react-three/drei';
 import { Line } from '@react-three/drei';
 import { RootState, useFrame } from '@react-three/fiber';
-import StandingPerson from './StandingPerson';
+import StandingPerson from './misc-components/StandingPerson';
 import { useRef } from 'react';
 import { Group } from 'three';
 import * as utils from '../knotfree-ts-lib/3d/utils';
-import * as leaves from './LeafRenderingComponent';
+import * as leaves from './MiscCubeRenderElements';
 
 export type OutlineBoxComponentProps = {
     // cube: oct.Cube, do we have the whole TreeStatus? Just pass that in.
@@ -33,7 +33,7 @@ export function OutlineBoxComponentPlain(props: OutlineBoxComponentProps) {
     const cube = props.treeStatus.cube
     const plainColorHere = props.color || "royalblue"
 
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+    const center = oct.CubeToCenter(cube)// : [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
 
     const width = (2 ** cube.p)
 
@@ -83,20 +83,25 @@ export function OutlineBoxComponentPlain(props: OutlineBoxComponentProps) {
 
     const adjustment = 0.25 // lift the text above the floor. 10 cm is a lot but still not working
     // what the hell. May pull in that far clip plane.
+    const FONT_URL = '/fonts/Inter_18pt-Bold.ttf'
+
     return (
         <>
             <leaves.CubeWithEdges cube={props.treeStatus.cube}
-             key={props.treeStatus.name} />
+                key={props.treeStatus.name} />
 
-            <Text color={plainColorHere} anchorX="center" anchorY="middle"
-                position={[center[0], center[1] - width / 2 + adjustment, center[2]]}
-                rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
-                fontSize={markerSize * 2}>
-                {label}
-            </Text>
         </>
     )
 }
+
+            // <Text color={plainColorHere} anchorX="center" anchorY="middle"
+            //     position={[center[0], center[1] - width / 2 + adjustment, center[2]]}
+            //     rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
+            //     fontSize={markerSize * 2}>
+            //     font={FONT_URL}
+            //     {label}
+            // </Text>
+
 
 // end of OutlineBoxComponentPlain 
 // end of OutlineBoxComponentPlain 
@@ -112,7 +117,7 @@ export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
     const cube = props.treeStatus.cube
     const color = props.color || "royalblue"
 
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+    const center = oct.CubeToCenter(cube)// : [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
 
     const width = (2 ** cube.p)
 
@@ -423,6 +428,9 @@ export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
         //     console.log(`OutlineBoxComponent not pppp Plain cube MESSAGE is `, label)
         // NEVER ADD A KEY TO A TEXT. IT WILL BE IN THE TEXT
 
+        const FONT_URL = '/fonts/Inter_18pt-Bold.ttf'
+
+
         return (
             <React.Fragment key={index}>
                 <mesh key={index} position={adjustedPosition} rotation={rotation}>
@@ -441,18 +449,19 @@ export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
                         />
                     </mesh>
 
-                    <Text  color={"black"} anchorX="center" anchorY="middle"
-                        position={[0, 0.0, 0.02]} // Slightly in front of the plane to avoid z-fighting}
-                        // rotation={textRotation}
-                        rotation-z={rotationZ}
-                        fontSize={.15}>
-                        {message}
-                    </Text>
                 </mesh>
             </React.Fragment>
         )
     }
 
+                    // <Text color={"black"} anchorX="center" anchorY="middle"
+                    //     position={[0, 0.0, 0.02]} // Slightly in front of the plane to avoid z-fighting}
+                    //     // rotation={textRotation}
+                    //     rotation-z={rotationZ}
+                    //     fontSize={.15}>
+                    //     font={FONT_URL}
+                    //     {message}
+                    // </Text>
 
 
 
@@ -487,6 +496,8 @@ export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
     }
 
     // console.log(`OutlineBoxComponent not plain something is `, label)
+    const FONT_URL = '/fonts/Inter_18pt-Bold.ttf'
+
 
     return (
         <>
@@ -494,17 +505,20 @@ export function OutlineBoxComponent(props: OutlineBoxComponentProps) {
             {/* <TwoInchBox /> */}
 
             {/* we should billboard this. That would be funny. */}
-            <Text color={textColor} anchorX="center" anchorY="middle"
-                position={[center[0], 0, center[2]]}
-                rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
-                fontSize={markerSize * 2}>
-                {label}
-            </Text>
 
             <IfFarAway />
         </>
     )
 }
+
+            // <Text color={textColor} anchorX="center" anchorY="middle"
+            //     position={[center[0], 0, center[2]]}
+            //     rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
+            //     fontSize={markerSize * 2}>
+            //     font={FONT_URL}
+            //     {label}
+            // </Text>
+
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE

@@ -1,7 +1,7 @@
 {
     "include": [
         "./src/**/*", "declarations.d.ts"
-    ],
+, "broken-things/ReserveVrFunction.ts"    ],
     "compilerOptions": {
         // I hate node link errors. it's ruining my life.
         // simply won't work "target": "ES2022", // atw

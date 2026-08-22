@@ -1,9 +1,9 @@
 
 import { assert } from 'console';
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import * as THREE from 'three';
 
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
+// import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
 
 import { WriteAllTheCubeCacheOut, ReadAllTheCubeCacheIn } from './CacheFileStuff';
 
@@ -29,7 +29,7 @@ async function doTheScript() {
     // dnstypes.SetKnotfreeServer("https://knotfree.net") // test in prod.
     // Why? 
 
-    oct.gTreeStatusCache.clear() // start with an empty cache.
+    oct.ClearTreeStatusCache() // start with an empty cache.
     // to do this right we must cleear the child bits cache too.
     console.log("Starting to build the whole tree and cache it. cache size BEFORE clear: ", ourLocalStorage.length)
     oct.ClearChildBitsCache()
@@ -37,7 +37,7 @@ async function doTheScript() {
 
     let startingTime = Date.now()
 
-    const builder = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+    const builder = new bvts.BuildVisibleTreeStatus()
     const position = new THREE.Vector3(-2, 1.75, 10)
     builder.minRatioToBeVisible = 0 // this is the key to getting everything. 0 means everything is visible. 
     // 1 means only the closest cubes are visible 45 degrees?
@@ -51,8 +51,8 @@ async function doTheScript() {
     // here's what we want:
     console.log("showingLeaves: ", builder.showingLeaves.size)
 
-    console.log("cache entries count: ", oct.gTreeStatusCache.size)
-    const cacheSize = oct.gTreeStatusCache.size
+    console.log("cache entries count: ", oct.TreeStatusCacheSize())
+    const cacheSize = oct.TreeStatusCacheSize()
 
 
     // let's see that cache now.
@@ -71,12 +71,12 @@ async function doTheScript() {
     // now, do it AGAIN!
     // with a cleared cache but a non clear localStorage. This should be fast because the localStorage cache is used.
     if (false) {
-        oct.gTreeStatusCache.clear() // start with an empty cache.
+        oct.ClearTreeStatusCache() // start with an empty cache.
         console.log("Starting to build the whole tree and cache it. cache size: ", ourLocalStorage.length)
 
         startingTime = Date.now()
         {
-            const builder = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+            const builder = new bvts.BuildVisibleTreeStatus()
             const position = new THREE.Vector3(-2, 1.75, 10)
             builder.minRatioToBeVisible = 0 // this is the key to getting everything. 0 means everything is visible. 
             // 1 means only the closest cubes are visible 45 degrees?
@@ -89,7 +89,7 @@ async function doTheScript() {
         endingTime = Date.now()
         console.log("Time taken to BuildVisibleTree #2: ", endingTime - startingTime, "ms for 1 run.", "or", (endingTime - startingTime) / 1, "ms per run.")
 
-        console.log("cube cache entries count: ", oct.gTreeStatusCache.size)
+        console.log("cube cache entries count: ", oct.TreeStatusCacheSize())
 
         const cacheEntries2 = oct.GetTheWholeChildBitsLocalCache()
         console.log("child bits entries count: ", cacheEntries2.size)

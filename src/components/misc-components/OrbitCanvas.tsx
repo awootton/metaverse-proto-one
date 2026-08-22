@@ -1,27 +1,31 @@
 import React, { useRef, useEffect } from 'react'
 
 import { Canvas } from '@react-three/fiber'
-import { MainWorldDisplay } from './MainWorldDisplay'
+import { MainWorldDisplay } from '../MainWorldDisplay'
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/Dns8Tree'
 
 import { RootState, useFrame, useThree } from '@react-three/fiber'
 
 import { Vector3 } from 'three'
 
+// We are NOT using this anymore. It would fight with the main canvas. 
+// AppCanvas won.
 
 // a make a canvas thst shows MainWorldDisplay, Just like the other one.
 // orbit around the box.
 
 import { OrbitControls } from '@react-three/drei';
 import { Stats } from '@react-three/drei'
-import { Perf } from 'r3f-perf'
+// import { Perf } from 'r3f-perf'
 import { useTexture } from '@react-three/drei'
 
+// This is antique. Back up to the controlling dialog for all the action. 
+// See OrbitPropertyDialog  (really OrbitPropertyDialog2)
 
-import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+import * as bvts from '../../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
 // import { WorldDisplayState } from './WorldDisplayState';
-import { Background, Backdrop, Backcube } from './AppCanvas';
+import { Background, Backdrop, Backcube } from '../AppCanvas';
 
 // const appVisibleTree = new bvts.BuildVisibleTreeStatus(myMapCacheIntf);
 
@@ -43,7 +47,7 @@ export type OrbitalProps = {
   // every instance of MainWorldDisplay should have it's own copy of the BuildVisibleTreeStatus, but they should share the same cache.
   // theGlobalTree: bvts.BuildVisibleTreeStatus // = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
 
-  uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
+  // uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
   showOriginAxis: boolean // = true should we pass these around as props or just have them in local storage? 
   // CP: I think we should have them in local storage, so they can be shared between different instances of the component.
   // Well, copilot has no class so we're keepkng them here. 
@@ -52,13 +56,14 @@ export type OrbitalProps = {
   toggleOnlyShowOutlineBoxes: () => void
 
 
-  showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
+  showingLeaves: string[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
 
   shouldShowOrbitalCanvasDisplay: boolean // turn the whole thing off when it's hidden.
 
 }
 
-export default function OrbitCanvas(orbitalProps: OrbitalProps) {
+// xxx means means nobody is using this anymore
+export default function XXX_Orbit_x_Canvas(orbitalProps: OrbitalProps) {
 
   console.log("OrbitCanvas starting with props: ", orbitalProps)
   //console.log("OrbitCanvas starting with leaves: ", orbitalProps.showingLeaves.length)
@@ -123,12 +128,14 @@ export default function OrbitCanvas(orbitalProps: OrbitalProps) {
 
         <OrbitCanvasInTheCanvas
 
+         showOriginAxis={orbitalProps.showOriginAxis}
+
           //  worldDisplayState={orbitalProps.worldDisplayState}
           showingLeaves={orbitalProps.showingLeaves}
           shouldShowOrbitalCanvasDisplay={orbitalProps.shouldShowOrbitalCanvasDisplay} 
           worldName={''} 
           currentCameraPosition={new Vector3} 
-          uniqueId={''} showOriginAxis={false} 
+      //    uniqueId={''} showOriginAxis={false} 
           onlyShowOutlineBoxes={false} toggleOnlyShowOutlineBoxes={function (): void {
             throw new Error('Function not implemented.')
           } }
@@ -168,11 +175,14 @@ export function OrbitCanvasInTheCanvas(orbitalProps: OrbitalProps) {
 
   console.log("OrbitCanvasInTheCanvas starting with position: ", orbitalProps.currentCameraPosition)
 
+  //       <Perf position="bottom-right" minimal />
+
+
+  
   return (
     <>
 
       {/* <Stats /> */}
-      <Perf position="bottom-right" minimal />
 
       <ambientLight intensity={0.25} />
 

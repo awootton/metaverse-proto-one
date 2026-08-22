@@ -1,13 +1,12 @@
 
-import * as oct from './DomainNameOctTree'
+import * as oct from '../src/knotfree-ts-lib/3d/Dns8Tree'
 
-import * as loaders from './OctTreeLoaders'
-import * as atwdns from './DnsTypes'
-import readline from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
-import * as utils from './utils'
-import * as names from './NamesApi'
-import * as fetchAndMerge from './BatchFetchAndMergeController'
+import * as loaders from '../src/knotfree-ts-lib/3d/OctTreeLoaders'
+import * as atwdns from '../src/knotfree-ts-lib/3d/DnsTypes'
+import * as readline from 'node:readline/promises';
+import * as utils from '../src/knotfree-ts-lib/3d/utils'
+import * as names from '../src/knotfree-ts-lib/3d/NamesApi'
+import * as fetchAndMerge from '../src/knotfree-ts-lib/3d/BatchFetchAndMergeController'
 
 // Where should this live? It's a lib now.
 
@@ -17,7 +16,7 @@ export type ThingsThatAlreadyExistType = {
     weOwnIt: boolean // if we own it, then we can reserve it again. If we don't own it, then we can't reserve it or add the TXT record. or anything else.
 }
 
-// ReserveResult is the accumulation of results during the process of reserving a property. 
+// ReserveResult is the accumulation of results during the process of reserving a property. It's pretty good.
 // It includes the original list of properties we wanted to reserve, the raw chains of cubes that we would need to reserve, 
 // the list of cubes that we already had in the cache, the list of cubes that we actually need to reserve, 
 // a reference to the cube cache, and any error that occurred during the process.
@@ -39,7 +38,8 @@ export type ReserveResult = {
 
     leavesWeOwn: ThingsThatAlreadyExistType[],  // leaves that we own
 
-    cubeCache: Map<string, oct.TreeStatus>, // a reference to the cache. Is oct.gCubeCache and I think it should be passed in as an arg and not just assumed.
+   // Just use the global cache. Don't get fancy.
+   // cubeCache: Map<string, oct.TreeStatus>, // a reference to the cache. Is oct.gCubeCache and I think it should be passed in as an arg and not just assumed.
     error: Error | null
 }
 
@@ -79,7 +79,7 @@ export class ReserveVrFunctions {
         }
         // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
 
-        let tmp = await this.PrepareToReservePropertyBatch(cubeNames, oct.gTreeStatusCache)
+        let tmp = await this.PrepareToReservePropertyBatch(cubeNames)
         // console.log("PrepareToReservePropertyBatch result", tmp)
         if (tmp instanceof Error) {
             console.error("Error preparing to reserve property batch:", tmp)
@@ -115,8 +115,8 @@ export class ReserveVrFunctions {
                 if (reserveResult.leavesWeOwn.length > 0) {
                     console.log("We do have some properties that already exist that we could re-do to add group params and such.", reserveResult.leavesWeOwn.map(item => oct.CubeToString(item.cube)[0]))
 
-                    const yn = await askQuestion("Would you like to keep going and process these existing properties? (y/n) ")
-                    if (yn.toLowerCase() === "n") {
+                    const shouldKeepGoing = await askYesNo("Would you like to keep going and process these existing properties? (y/n) ")
+                    if (!shouldKeepGoing) {
                         console.log("Aborting reservation.")
                         return new Error("No properties to reserve after preparation.")
                     }
@@ -134,8 +134,8 @@ export class ReserveVrFunctions {
             // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
         }
 
-        const yn = await askQuestion("Would you like to reserve these names now? (y/n) ")
-        if (yn.toLowerCase() !== "y") {
+        const shouldProceed = await askYesNo("Would you like to reserve these names now? (y/n) ")
+        if (!shouldProceed) {
             console.log("Aborting reservation.")
             return new Error("Reservation aborted by user.")
         } else {
@@ -236,6 +236,7 @@ export class ReserveVrFunctions {
     }
 
 
+    // This is not really usable. Tell me on twitter and I'll make a proper one. 
     // This is half ass. Make a better one. Start with a new fresh childbits cache and it's easy.
     // none of this mucking about.
     async DeleteVr(cubeNames: string[], groupTextParameters: oct.GroupTextParameters): Promise<Error | null> {
@@ -250,7 +251,7 @@ export class ReserveVrFunctions {
         }
         // console.log("Group text parameters for the reservation:", JSON.stringify(groupTextParameters), gtpString.length)
 
-        let tmp = await this.PrepareToReservePropertyBatch(cubeNames, oct.gTreeStatusCache)
+        let tmp = await this.PrepareToReservePropertyBatch(cubeNames)
         // console.log("PrepareToReservePropertyBatch result", tmp)
         if (tmp instanceof Error) {
             console.error("Error preparing to reserve property batch:", tmp)
@@ -437,7 +438,7 @@ export class ReserveVrFunctions {
     // It does not actually do the reservation, and it will NOT check the cache and return the whole list.
     // The idea is that we can then batch those missing ones together and reserve them all at once, and then update the cache with the new ones.
     // it does not have to be swift. Doesn't happen during render, it can be a button click or something.
-    async PrepareToReservePropertyBatch(startingProperties: string[], cache: Map<string, oct.TreeStatus>): Promise<[ReserveResult, Error | null]> {
+    async PrepareToReservePropertyBatch(startingProperties: string[] ): Promise<[ReserveResult, Error | null]> {
 
         let result: ReserveResult = {
             startingProperties,
@@ -445,7 +446,7 @@ export class ReserveVrFunctions {
             thingsToActuallyReserve: [],
             leavesWeOwn: [],
             rawChains: [],
-            cubeCache: cache,
+          //  cubeCache: cache,
             error: null
         }
         for (const property of startingProperties) {
@@ -482,11 +483,11 @@ export class ReserveVrFunctions {
         return [result, null]
     }
 
-    // if the property is already exists, or we find it in the cache (same thing) then we CAN'T reserve it. 
+    // if the property is already exists, or we find it in the cache (same thing) then we CAN'T reserve it (unless WE own it :-). 
     // actually, if ANY of the parents are not parents and are actually leaves then, also a fail.
     // please tell me this works in a browser environment. I'm nervious about .map and stuff.
     // the problem is that, if we own those things, then we could be idimpotent and just keep going.
-    // we MUST be idimpotent.
+    // we MUST be idimpotent. (atw 8/7/26 we can do it).
     async VerifyReservePropertyBatch(result: ReserveResult): Promise<[ReserveResult, Error | null]> {
 
         // check for leafs. If any of the parents are actually leafs, then we can't reserve this property. 
@@ -762,17 +763,35 @@ export function GetTheKeys(): [[string, string], string, Error | null] {
 }
 
 
-async function askQuestion(q: string): Promise<string> {
-    // Create the interface link to standard I/O
-    const rl = readline.createInterface({ input, output });
+
+
+
+async function askQuestion(q: string, defaultAnswer: 'y' | 'n' | null = null): Promise<string> {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
     try {
-        // Prompt the user and wait for their answer
-        const answer = await rl.question(q);
-        return answer;
+        while (true) {
+            const raw = await rl.question(q);
+            const answer = raw.trim().toLowerCase();
+            if (answer === '' && defaultAnswer !== null) {
+                return defaultAnswer;
+            }
+            if (answer === 'y' || answer === 'n') {
+                return answer;
+            }
+            console.log("Please enter Y or N.");
+        }
     } finally {
-        // Always close the interface to release the terminal stream
         rl.close();
     }
+}
+
+async function askYesNo(q: string, defaultAnswer: 'y' | 'n' | null = 'n'): Promise<boolean> {
+    const answer = await askQuestion(q, defaultAnswer);
+    return answer === 'y';
 }
 
 // Copyright 2026 Alan Tracey Wootton

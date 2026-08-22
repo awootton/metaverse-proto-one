@@ -1,10 +1,5 @@
-import { assert } from 'console';
 
-
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
-import * as atwdns from '../knotfree-ts-lib/3d/DnsTypes'
-
-import * as utils from '../knotfree-ts-lib/3d/utils';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 
 // We're not using this. It's too slow.
 

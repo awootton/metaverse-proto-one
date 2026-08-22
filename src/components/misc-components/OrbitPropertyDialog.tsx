@@ -3,8 +3,8 @@ import { FC, ReactElement, useState } from 'react'
 
 import * as THREE from 'three';
 
-import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
-import * as utils from '../knotfree-ts-lib/3d/utils';
+import * as bvts from '../../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
+import * as utils from '../../knotfree-ts-lib/3d/utils';
 
 // material ui
 import {
@@ -21,11 +21,11 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 import { Tooltip } from 'react-tooltip'
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/Dns8Tree'
 
-import * as pubsub from './PubSubTopicAndSubscribers'
+import * as pubsub from '../../knotfree-ts-lib/avatars/PubSubTopicAndSubscribers'
 import OrbitCanvas from './OrbitCanvas';
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
+import { mainpubsub } from '../../App';
 
 
 type Props = {
@@ -35,14 +35,14 @@ type Props = {
     onConfirm: () => any
 
     shouldShowOrbitalCanvasDisplay: boolean // I suppose this should be true.
-  
+
     // maybve later. previousCameraPosition: THREE.Vector3 // = new THREE.Vector3(1e999, 0, 0)
 
     worldName: string
 
-   //  it moves uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
+    //  it moves uniqueId: string // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
     showOriginAxis: boolean // = true should we pass these around as props or just have them in local storage? 
- // we subscribe   showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
+    // we subscribe   showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
 }
 
 let count = 0
@@ -58,17 +58,32 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
     console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
     console.log("OrbitPropertyDialog count     ", count++)
 
+    console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
+    console.log("OrbitPropertyDialog count     ", count++)
+
+    console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
+    console.log("OrbitPropertyDialog count     ", count++)
+
+    console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
+    console.log("OrbitPropertyDialog count     ", count++)
+
+    console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
+    console.log("OrbitPropertyDialog count     ", count++)
+
+    console.log("OrbitPropertyDialog starting with props     ") // , props.onlyShowOutlineBoxes)
+    console.log("OrbitPropertyDialog count     ", count++)
+
     // we should put these together.
     console.log("OrbitPropertyDialog should orbital view display? ") //, props.shouldShowOrbitalCanvasDisplay)
 
     // why are we up here?
     // later 
-    const [showingLeaves, setShowingLeaves] = useState([] as oct.TreeStatus[])
+    const [showingLeaves, setShowingLeaves] = useState([])
     const [showingTextPortion, setShowingTextPortion] = useState(true)
     let demoProperties = localStorage.getItem("DemoProperties") || ""
     const [inputValue, setInputValue] = React.useState(demoProperties);
     const [demoPropertiesError, setDemoPropertiesError] = React.useState("")
-    const [uniqueId, setUniqueId] = useState(utils.randomString(24));
+    const [uniqueId, setUniqueId] = useState(utils.RandomString(24));
 
     console.log("OrbitPropertyDialog showingLeaves? ", showingLeaves.length, " showingTextPortion? ", showingTextPortion)
 
@@ -89,9 +104,11 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
     // for mere mortals to see space names.    
     // console.log("OrbitPropertyDialog demoProperties from localStorage: ", demoProperties)
 
+    // This has all been discontinued../
+
     React.useEffect(() => {
 
-        pubsub.subscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId,
+        mainpubsub.subscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId,
             (leaves: oct.TreeStatus[]) => {
                 //  too long to log: 
                 console.log("OrbitalPropertyDialog got showingLeaves ", leaves.length)
@@ -106,15 +123,15 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
                 // This is designed poorly.
                 // if (false) {//props.shouldShowOrbitalCanvasDisplay) {
 
-                console.log("OrbitalPropertyDialog got leaves.", leaves.length )
-                setShowingLeaves(leaves)
+                console.log("OrbitalPropertyDialog got leaves.", leaves.length)
+                // NO WE'RE discontinuing this whole component           setShowingLeaves(leaves)
                 // }
-            })
+            },"TODO: delete this whole antique component")
 
         return () => {
-            pubsub.unsubscribe("ShowingLeavesChanges", "OrbitalDialog" +  uniqueId)
+            mainpubsub.unsubscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId)
         }
-    }, [showingLeaves])
+    }, [])
 
 
     function checkForGoodParse(str: string): boolean {
@@ -154,7 +171,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
         setInputValue("")
         localStorage.setItem("DemoProperties", "")
         setDemoPropertiesError("")
-        pubsub.publish("DemoPropertiesChanges", utils.randomString(24))
+        mainpubsub.publish("DemoPropertiesChanges", utils.RandomString(24))
     }
 
     // these don't propogate. They should cause a refresh. FIXME:
@@ -174,7 +191,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
         }
         if (isGood) {
             console.log("OrbitalPropertyDialog OK clicked, PUBLISH final input value: ", str)
-            pubsub.publish("DemoPropertiesChanges", utils.randomString(24))
+            mainpubsub.publish("DemoPropertiesChanges", utils.RandomString(24))
         } else {
             setDemoPropertiesError("not an addresses or from-to list.")
         }
@@ -205,7 +222,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
 
     // can we center them on the camera or something?
     function setFromToAndClick(from: string, to: string) {
-        const worldname = "testworld1"// props.worldDisplayState.worldName
+        const worldname = "testmain"// props.worldDisplayState.worldName
         const fromToString = `from ${worldname}-${from} to ${worldname}-${to}`
         // ix nay on the "and click". Just change the input form.
         setInputValue(fromToString);
@@ -219,32 +236,13 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
             }}>
                 <OrbitCanvas
 
-// worldName: string
-
-//   showOriginAxis: boolean // = true should we pass these around as props or just have them in local storage? 
-//   // CP: I think we should have them in local storage, so they can be shared between different instances of the component.
-//   // Well, copilot has no class so we're keepkng them here. 
-
-//   onlyShowOutlineBoxes: boolean // = false, don't save this in storage.
-//   toggleOnlyShowOutlineBoxes: () => void
-
-
-//   showingLeaves: oct.TreeStatus[] // the leaves to show in the scene, for demo purposes. This would be set by the dialog input and saved to local storage when the user clicks OK.
-
-//   shouldShowOrbitalCanvasDisplay: boolean // turn the whole thing off when it's hidden.
-
-
                     worldName={props.worldName}
-                    uniqueId={"SOmeDummyIhave-no-patenence-for"}
                     showOriginAxis={props.showOriginAxis}
-                    //       onlyShowOutlineBoxes={props.onlyShowOutlineBoxes}
-                    //        toggleOnlyShowOutlineBoxes={props.toggleOnlyShowOutlineBoxes}
-                    //    currentCameraPosition={props.currentCameraPosition}
                     showingLeaves={showingLeaves}
                     shouldShowOrbitalCanvasDisplay={props.shouldShowOrbitalCanvasDisplay}
-                    currentCameraPosition = {new THREE.Vector3(0,0,0)}// {props.currentCameraPosition}
-                    onlyShowOutlineBoxes= {false} // {props.onlyShowOutlineBoxes}
-                    toggleOnlyShowOutlineBoxes= {() => {}} //{props.toggleOnlyShowOutlineBoxes}
+                    currentCameraPosition={new THREE.Vector3(0, 0, 0)}// {props.currentCameraPosition}
+                    onlyShowOutlineBoxes={false} // {props.onlyShowOutlineBoxes}
+                    toggleOnlyShowOutlineBoxes={() => { }} //{props.toggleOnlyShowOutlineBoxes}
                 />
             </div>
         )

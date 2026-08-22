@@ -1,5 +1,5 @@
 
-import * as oct from './DomainNameOctTree'
+import * as oct from './Dns8Tree'
 import * as atwdns from './DnsTypes'
 import { error } from 'console';
 import * as utils from './utils';
@@ -324,10 +324,13 @@ export function FillInTxtLogic(theanswertext: string, treeStatus: oct.TreeStatus
 
     console.log("FillInTxtLogic for ", treeStatus.name, treeStatus.wasXYZ ? ".xyz" : ".vr", "with", theanswertext)
 
+    // if we use treeStatus.name as the id instead of random string then they still 
+    // group correctly.
+
     // groupId?: GroupTextParameters | boolean, 
     // the group that this tree belongs to, which is the same for all leaf nodes rendered by the same iFrame or server. 
     let somegrp: oct.GroupTextParameters = {
-        id: utils.randomString(24),
+        id: treeStatus.name,// utils.randomString(24),
         master: "unknown-must-be-set"
     }
     try {
@@ -335,7 +338,7 @@ export function FillInTxtLogic(theanswertext: string, treeStatus: oct.TreeStatus
     } catch {
         // still a valid groupId.
         somegrp = {
-            id: utils.randomString(24),
+            id: treeStatus.name,// utils.randomString(24),
             master: "unknown-must-be-set2"
         }
     }
@@ -344,12 +347,12 @@ export function FillInTxtLogic(theanswertext: string, treeStatus: oct.TreeStatus
     }
     if (somegrp) {
         if (somegrp.id === undefined || somegrp.id === "") {
-            somegrp.id = utils.randomString(24)
+            somegrp.id = treeStatus.name// utils.randomString(24)
         }
     } else {
         // didn't parse.
         somegrp = {
-            id: utils.randomString(24),
+            id: treeStatus.name,// utils.randomString(24),
             master: "unknown-must-be-set3"
         }
     }

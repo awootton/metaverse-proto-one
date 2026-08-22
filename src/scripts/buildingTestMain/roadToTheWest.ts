@@ -1,6 +1,6 @@
-import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/Dns8Tree'
 
-import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
+import { ReserveVrFunctions } from '../../../broken-things/ReserveVrFunction'
 
 // before you start this script, in a command line terminal, you must set the PRIVATE_KNOTFREE_PASSPHRASE and BIG_KNOTFREE_TOKEN environment variables.
 // usually like this:
@@ -12,6 +12,8 @@ import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
 const property1 = "testmain-1n0u1w4p" // It's a 16 meter square, like a 4 lane road
 // extending out to the west from the courtyard.
 const property2 = "testmain-1n0u64w4p" 
+
+// who is the master?
 
 const [fromtostring, err] = oct.FromXToYString(property1, property2)
 if (err) {

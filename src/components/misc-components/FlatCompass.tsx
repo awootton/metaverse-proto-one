@@ -1,6 +1,9 @@
-//flatCompas.tsx
+// FlatCompass.tsx
 
 import React, { useState, useRef } from 'react';
+
+
+// discontinued.
 
 interface FlatCompassProps {
   rotationAngle: number;  
@@ -8,7 +11,7 @@ interface FlatCompassProps {
 
 // This component renders a flat compass UI element that shows the camera's orientation in the 3D scene.
 // 1. Separate UI Component for the 2D Flat Compass
-export const FlatCompass = ( props : FlatCompassProps) => {
+export const XFlatCompass = ( props : FlatCompassProps) => {
 
   // console.log('FlatCompass render with rotationAngle:', props.rotationAngle);
   return (

@@ -1,5 +1,10 @@
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes';
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
+
+// we're doing all over again from scratch. 
+
+// There are no more texture urls. It's only vr urls.
+// also, they can't all run on localhost:3010 They can run on different ports, but not step on each other.
 
 // When we are local and running against the local copy of WorldsTest1 we want to rewrite the urls to point to the local server instead of the remote server.
 // This way there's debugging available for the iFrame even from inside this app. Very cool.
@@ -10,6 +15,8 @@ import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 
 // for a iFrame we need something like "http://localhost:3010/testmain-0n0u0e5p.vr" which is weird but it's how the local copy of WorldsTest1 knows which world it's serving.
 // and I AM using the same code to serve several spaces.
+
+// atw: actually: "http://localhost:3010/domain=testmain-0n0u0e5p.vr" but we don't do that either.
 
 // if it's a .vr url and we're not local and the IP address is to knotfree.net (secure) or knotfree.io (insecure) 
 // unless we're somehow using the dns.gotohere.com resolver (and we're not) then we have to make it a subdomain request.
@@ -34,10 +41,73 @@ import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 // and also the problem of master names for textures?
 // add a setting to force non-local urls to be rewritten to the subdomain form, so we can test the subdomain form.
 
-export default function RewriteUrl( url: string, groupInfo: oct.GroupTextParameters, 
-            treeStatus: oct.TreeStatus,
-            forceRemote?: boolean): string {
-    
+import { ServerItem, OurServerList } from '../knotfree-ts-lib/avatars/testServermap';
+
+
+// eg 
+
+export function aux2LocalUrlForIframes(aux: oct.AuxLeafStatus): string {
+
+    // console.log("aux2LocalUrlForIframes, url rewritten FROM ", aux.wholeMaster)
+
+    if (dnstypes.localAndInWindows) {
+
+        for (const [name, info] of Object.entries(OurServerList.servers)) {
+            const item = info as ServerItem
+            const itemNoTld = item.master.split(".")[0] // no tld
+
+            if (aux.wholeMaster === itemNoTld) {
+                // replace the master with the local server name and port.
+                let url = "http://" + aux.wholeMaster + ".zzz:" + item.port
+                // console.log("rewriteUrl: localAndInWindows, url rewritten to ", url)
+                return url
+                // eg "http://testmain-0n0u0e5p.zzz:4001"
+            }
+        }
+    }
+
+    // NO. We'll get the TLD from the LeafStatus end everyone else can hang.
+    // const ts : oct.TreeStatus = oct.GetTreeStatusFromCache(aux.master + "-" + aux.leaves[0]) as oct.TreeStatus;
+    // let tld = ".vr"
+    // if (!ts) {
+    //     console.warn("aux2LocalUrl: no TreeStatus for aux.master: ", aux.master, " aux.leaves[0]: ", aux.leaves[0], " aux: ", aux)
+    //     return `http://localhost:3010/?domain=${aux.master}&asset=missing&type=missing`;
+    // } else {
+    //     tld = ts.wasXYZ ? ".xyz" : ".vr"
+    //}
+    const master = aux.wholeMaster
+    const dbg = aux.txtParams.dbg;
+    const asset = aux.txtParams.asset;
+    const type = aux.txtParams.type;
+    return `http://${dbg}/?domain=${master}&asset=${asset}&type=${type}`;
+}
+
+// do we care about textures anymore? Let them fail until they are replaced with .vr urls. 
+// The .vr urls will be rewritten to the subdomain form if we're not local and not using the local servers.
+export default function RewriteUrl(url: string, groupInfo: oct.GroupTextParameters,
+    treeStatus: oct.TreeStatus,
+    forceRemote?: boolean): string {
+
+    // console.log("rewriteUrl: localAndInWindows, url rewritten FROM ", url)
+
+    if (false && dnstypes.localAndInWindows) { // using to translate
+        // we have a master and a list.
+        // make a local url 
+
+        // eg, have "http://testmain-1n0u10w4p/street.jpg", "http://testmain-0n0u0e5p/cobblestonesgrok512.jpg"
+        // or 
+
+        for (const [name, info] of Object.entries(OurServerList.servers)) {
+            const item = info as ServerItem
+            if (url.includes(item.master)) {
+                // replace the master with the local server name and port.
+                url = url.replace(item.master, "localhost:" + item.port)
+                console.log("rewriteUrl: localAndInWindows, url rewritten to ", url)
+                return url
+            }
+        }
+    }
+
     if (dnstypes.localAndInWindows && !dnstypes.rewriteUrlsToRemote && !forceRemote) {
         if (groupInfo.dbg) {
             // replace everything between // and the next / with the dbg value.

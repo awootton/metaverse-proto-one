@@ -1,22 +1,14 @@
 
-
 // This is the singleton subscribe. This is NOT where several entities can subscribe to the same topic. 
 // We could do this with the other one, and we could make mistakes.
+
 
 // We use this for iFrames to have a message bus. Note that the "T" for the messages is the
 // minimal base class for internal messages.
 // It's not like subscribing to a list or a data structure. It's more like where a server has a domain name or an address 
 // and we all send it commands and messages.
-// It's a singleton subscribe.
+// It's a singleton subscribe. One thing subscribes per topic.
 
-type localMapItem<T> = {
-    callback: (message: T, err: null | Error) => any
-}
-
-// Do we really need the error?
-
-// from subscriptionId to localMapItem
-let sessionMap = new Map<string, localMapItem<any>>()
 
 // If you do this twice the first one gets washed away.
 // If you're not the guy for these messages, and you subscribe anyway, you could be totally screwing someone else up. 
@@ -50,13 +42,22 @@ export function publish<T>(subscriptionId: string, message: T) {
 
 // Remove is called when a component is unmounted. Prevent leaks.
 export function unsubscribe(subscriptionId: string) {
-
     const found = sessionMap.get(subscriptionId)
     if (found !== undefined) {
         // console.log('PubSubSimple unsubscribe', subscriptionId)
         sessionMap.delete(subscriptionId)
     }
 }
+
+type localMapItem<T> = {
+    callback: (message: T, err: null | Error) => any
+}
+
+// Do we really need the error?
+
+// from subscriptionId to localMapItem
+let sessionMap = new Map<string, localMapItem<any>>()
+
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE

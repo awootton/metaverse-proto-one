@@ -1,23 +1,39 @@
-
-
 import * as THREE from 'three';
 
 // what does useMemo do?
 import React, { Suspense, useRef } from 'react';
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 import { Edges } from '@react-three/drei';
 import { useTexture } from '@react-three/drei';
 import RewriteUrl from './RewriteUrl';
 import { OutlineBoxComponent } from './OutlineBoxComponent'
-import * as leaves from './LeafRenderingComponent'
+import * as leaves from './MiscCubeRenderElements'
 // import { WorldDisplayState } from './WorldDisplayState';
-import { BatchInfo } from '../knotfree-ts-lib/3d/DomainNameOctTree';
-import { AuxLeafStatus } from '../knotfree-ts-lib/3d/DomainNameOctTree';
-import { ThingWithAux } from './LeafRenderingGlb';
+import { LeafRenderingComponentProps, AuxGroupRender } from './AuxGroupRenderer';
 
-export type LeafRenderingComponentProps = {
+
+// This falls out of favor as we change to rendering groups instead of individual cubes. But it's still here for now.
+// 
+
+// some varations of rendering a cube. The simplest is just a box with edges. 
+// The next is a box with a texture. 
+
+// The next is a box with a color. 
+// The next is a box with an outline. The next is a box with an outline and a texture. 
+// 
+// Mostly they are antique because we only render groups now even if it's a group of one.
+
+
+export const cube0: oct.Cube = {
+    world: "testmain",
+    x: 0,
+    y: 0,
+    z: 0,
+    p: 0
+}
+
+export type LeafRenderingComponentGroupProps = {
     treeStatus: oct.TreeStatus
-    //  cameraPosition: THREE.Vector3 // this would force a redraw anyway, and it's unused.
     groupInfo: oct.GroupTextParameters // let's also know this always.
 }
 
@@ -26,8 +42,8 @@ export type MakeBoxesForDemoSpacesPropsAux = {
 
     worldName: string
 
-    aux: AuxLeafStatus
-   // indexBase: number // worst feature EVER.
+    aux: oct.AuxLeafStatus
+    // indexBase: number // worst feature EVER.
 }
 
 
@@ -37,12 +53,12 @@ export type MakeBoxesForDemoSpacesPropsAux = {
 export type CubeWithEdgesProps = {
     cube: oct.Cube,
     // a cube ALREADY has unique name.
-  //  index: number // it's picky about this stuff.
+    //  index: number // it's picky about this stuff.
 }
 export function CubeWithEdges(props: CubeWithEdgesProps) {
     const cube = props.cube
 
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+    const center = oct.CubeToCenter(cube)
     const width = (2 ** cube.p)
     const size = width
 
@@ -71,7 +87,7 @@ export function CubeWithEdges(props: CubeWithEdgesProps) {
 
 // this is getting outmoded. The decision about who draws, in batches, is done at a higher level.
 // why does it need the camera position? It doesn't.
-export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
+export function LeafRenderingComponent(props: LeafRenderingComponentGroupProps) {
 
     const cube = props.treeStatus.cube
 
@@ -89,8 +105,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
     // console.log("LeafRenderingComponent ", treeStatus.groupId, treeStatus.cube, " isDebug ", isDebug)
     // console.log("LeafRenderingComponent groupInfo", groupInfo, " isDebug ", isDebug)
 
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
-
+    const center = oct.CubeToCenter(cube)
 
     const width = (2 ** cube.p)
 
@@ -160,7 +175,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
             texture = useTexture(textureUrl)
         } catch (e) {
             // just shut up already - console.error("Failed to load texture:", textureUrl, e)
-            // we should have a version of this with a big "error" sign posted at eye level. TODO:
+            // we should have a version of this with a big "error" sign pos ted at eye level. TODO:
             // I'm getting this with a textureUrl that works, and will eventually load.
             // what do I do in the meantime? 
             // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
@@ -254,16 +269,16 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
                         <ThingWithTexture treeStatus={props.treeStatus} groupInfo={props.groupInfo} />
                     </Suspense>
                 )
-            }   
-               // I really need to throw out some of this trash.
-                // why is this here? Why not in batches?
-                //              
+            }
+            // I really need to throw out some of this trash.
+            // why is this here? Why not in batches?
+            //              
             //     if (asset.match(/\.(glb|gltf)$/)) {
             //     return (
             //         <Suspense fallback={<CubeWithEdges />}>
 
             //             const ourprops: ThingWithAuxProps = {
-                        
+
             //                             worldName: props.worldName,
             //                             // uniqueId: props.uniqueId,
             //                             onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
@@ -271,7 +286,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
             //                             // previousCameraPosition: props.state.previousCameraPosition,
             //                             // timeSinceLastCameraMovement: props.state.timeSinceLastCameraMovement,
             //                             // theGlobalTree: props.state.theGlobalTree,    
-                        
+
             //                             aux: auxRecord,
             //                             indexBase: keyIndex,
             //                             groupTxt: groupTextParameters
@@ -279,7 +294,7 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
 
             //             <ThingWithAux {
 
-                            
+
             //                 } />
             //         </Suspense>
             //     )
@@ -299,8 +314,8 @@ export function LeafRenderingComponent(props: LeafRenderingComponentProps) {
                 propsMessage={"Under Construction"}
                 color={"blue"}
                 forceChainLink={true}
-                // key={99}
-           //     indexBase={99}
+            // key={99}
+            //     indexBase={99}
             />
         }
     }
@@ -327,9 +342,11 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
             color = colorMatch[1]
         }
     }
+    color = color.startsWith("color:") ? color.substring(6) : color
+
     // console.log("ThingWithColor color ", color)
     const cube = props.treeStatus.cube
-    const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+    const center = oct.CubeToCenter(cube)
 
     const width = (2 ** cube.p)
 
@@ -345,7 +362,7 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
     if (props.groupInfo.type === "floor") {
         return (
             <mesh
-            key={props.treeStatus.name} 
+                key={props.treeStatus.name}
                 position={centerBottom}
                 rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
             >
@@ -419,29 +436,23 @@ export function ThingWithColor(props: LeafRenderingComponentProps) {
 
 
 export type MakeBoxesForDemoSpacesProps = {
-    // worldDisplayState: WorldDisplayState
     worldName: string
-    groupInfo: BatchInfo
+    aux: oct.AuxLeafStatus
 }
 
 // This one is for when the asset is a color are the type is floor or ceiling. 
 // we prepare a batch of lines for all the cubes in the group and draw them all at once. This is much faster than drawing each cube separately.
 export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
-    const treeStatusList = props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
-    //const worldDisplayState = props.worldDisplayState
-    const groupInfo = props.groupInfo
-    // const indexBase = props.indexBase
-    const asset = props.groupInfo.asset
-    // parse out color:cname or color:#rrggbb
-    let color = "white"
-    const colorMatch = asset.match(/color:(#[0-9a-fA-F]{6}|[a-zA-Z]+)/)
-    if (colorMatch) {
-        color = colorMatch[1]
-    }
+    const treeStatusList = props.aux.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
+
+    let color = props.aux.oldeTxtJunk?.asset ?? "white"
+
+    // one more time for the stoners in the back.
+    color = color.startsWith("color:") ? color.substring(6) : color
 
     // change list of treeStatus to list of cubes
-    const cubeList = treeStatusList.map(ts => ts.cube)
+    const cubeList = oct.GetTheAuxCubes(props.aux) // treeStatusList.map(ts => ts.cube)
 
     // console.log("MakeBoxesForColorGroup with color: ", color, " and cubeList length: ", cubeList.length)
 
@@ -460,7 +471,7 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
     let idxIndex = 0
     // it only does this once, when the prop changes, so it's not too bad. We could also memoize it if we wanted to be sure.
     // we can take out time. 
-    const isCeiling = groupInfo.type === "ceiling"
+    const isCeiling = props.aux.oldeTxtJunk?.type === "ceiling"
 
     // we don't realy know these are the same size.
     for (const cube of cubeList) {
@@ -520,8 +531,8 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
     geometry.computeVertexNormals();
 
-    if ( ! oct.VerifyCubeName(props.groupInfo.masterName)) {
-        console.log("MakeBoxesForColorGroup: ", props.groupInfo.masterName, " this may work poorly")
+    if (!oct.VerifyCubeName(props.aux.wholeMaster)) {
+        console.log("MakeBoxesForColorGroup: ", props.aux.wholeMaster, " this may work poorly")
         return null
     }
 
@@ -534,19 +545,16 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 
     return (
         <>
-            <instancedMesh args={[geometry, material, cubeList.length]} key={props.groupInfo.masterName}>
+            <instancedMesh args={[geometry, material, cubeList.length]} key={props.aux.wholeMaster}>
             </instancedMesh>
         </>
     )
 }
 
-// type ThingWithGlbProps = {
-//     props: LeafRenderingComponentProps,
-//     indexBase: number
-// }
 
 // // FIXME: group the things with the same texture (and id) and draw them all at once. This will be more efficient than drawing each one separately. We can do this by creating a map of texture to list of cubes, and then drawing each list of cubes with the same texture in one go.
 // // for now, just draw the glb ones one at a time
+// this is all in the ThingWithAux now. We don't need this anymore.
 // export function ThingWithGlb({props, indexBase}: ThingWithGlbProps) {
 
 //     const groupInfo = props.groupInfo
@@ -558,7 +566,7 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 //         baseUrl += ".vr"
 //     }
 //     const cube = props.treeStatus.cube
-//     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+//     const center = oct.CubeToCenter(cube) // : [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
 //     const width = (2 ** cube.p)
 //     const size = width
 
@@ -592,7 +600,7 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 //     } catch (e) {
 //         // should we announce this? 
 //         console.log("Failed to load GLB:", glbUrl, e)
-//         // we should have a version of this with a big "error" sign posted at eye level. TODO:
+//         // we should have a version of this with a big "error" sign pos ted at eye level. TODO:
 //         // I'm getting this with a glbUrl that works, and will eventually load.
 //         // what do I do in the meantime? 
 //         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
@@ -617,7 +625,7 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 //     const groupInfo = props.props.groupInfo
 
 //     const cube = props.props.treeStatus.cube
-//     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
+//     const center = oct.CubeToCenter(cube) // : [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
 //     const width = (2 ** cube.p)
 //     const size = width
 
@@ -646,7 +654,7 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 //     } catch (e) {
 //         // should we announce this? 
 //         console.log("Failed to load GLB: from aux", aux, e)
-//         // we should have a version of this with a big "error" sign posted at eye level. TODO:
+//         // we should have a version of this with a big "error" sign pos ted at eye level. TODO:
 //         // I'm getting this with a glbUrl that works, and will eventually load.
 //         // what do I do in the meantime? 
 //         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
@@ -665,27 +673,28 @@ export function MakeBoxesForColorGroup(props: MakeBoxesForDemoSpacesProps) {
 // eg {"grp":"j9xK3mP8wL2z","dbg":"localhost:3010","type":"floor","asset":"cobblestonesgrok512.jpg:repeat:20"}	
 export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
-    const treeStatusList = props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
+    // const treeStatusList = props.groupInfo.leaves // // this will get the cubes from the DemoProperties string in localStorage and parse them. We could also pass the cubes directly as a prop if we wanted to, but this way we can keep the parsing logic in one place and also easily trigger a re-render when the DemoProperties string changes.
     // const worldDisplayState = props.worldDisplayState
-    const groupInfo = props.groupInfo
-   // const index Base = props.index Base
-    let asset = props.groupInfo.asset
+    // const groupInfo = props.groupInfo
+    // const index Base = props.index Base
+    // let asset = props.aux.oldeTxtJunk?.asset
 
     // if it ends with :repeat:N then parse that out and use it to repeat the texture.
-    let repeat = 1
-    if (asset) {
-        const repeatMatch = asset.match(/:repeat:(\d+)$/)
-        if (repeatMatch) {
-            repeat = parseInt(repeatMatch[1])
-
-            asset = asset.replace(/:repeat:\d+$/, "")
-        }
-    }
-    let baseUrl = "http://" + props.groupInfo.masterName
+    let repeat = props.aux.oldeTxtJunk?.repeat ?? 1
+    let asset = props.aux.oldeTxtJunk?.textureUrl ?? ""
+    let baseUrl = "http://" + props.aux.wholeMaster
     let textureUrl = baseUrl + "/" + asset
 
+    const ts = oct.GetTreeStatusFromCache(props.aux.wholeMaster) 
+    if (!ts) {
+        console.log("MakeBoxesForTextureGroup: no treeStatus for ", props.aux.wholeMaster)
+        return null
+    }
+    const treeStatus = ts
     const forceRemote = false
-    textureUrl = RewriteUrl(textureUrl, props.groupInfo.groupInfo, props.groupInfo.leaves[0], forceRemote)
+    // This ALWAYS fails and falls back and I'm never going to fix it.
+    // the iFrames provide GLB's and not textures. So we don't have a texture to load.  
+    textureUrl = RewriteUrl(textureUrl, props.aux.txtParams, treeStatus, forceRemote)
 
     // console.log("MakeBoxesForTextureGroup baseUrl ", baseUrl, " asset ", asset, " repeat ", repeat, "rewriteUrl returns ", textureUrl)
 
@@ -708,7 +717,7 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
     } catch (e) {
         // console.log("Failed to load texture:", textureUrl)
-        // we should have a version of this with a big "error" sign posted at eye level. TODO:
+        // we should have a version of this with a big "error" sign pos ted at eye level. TODO:
         // I'm getting this with a textureUrl that works, and will eventually load.
         // what do I do in the meantime? 
         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
@@ -730,7 +739,7 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
     // TODO: get fallback texture that always works. Maybe a local one. 
 
     // change list of treeStatus to list of cubes
-    const cubeList = treeStatusList.map(ts => ts.cube)
+    const cubeList = oct.GetTheAuxCubes(props.aux)
 
     // console.log("MakeBoxesForTextureGroup with texture: ", textureUrl, " and cubeList length: ", cubeList.length)
 
@@ -752,7 +761,7 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
     // it only does this once, when the prop changes, so it's not too bad. We could also memoize it if we wanted to be sure.
     // we can take out time. 
-    const isCeiling = groupInfo.type === "ceiling"
+    const isCeiling = props.aux.oldeTxtJunk?.type  === "ceiling"
 
     //repeat = 2
 
@@ -840,7 +849,7 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 
     return (
         <>
-            <instancedMesh args={[geometry, material, cubeList.length]} key={props.groupInfo.masterName}>
+            <instancedMesh args={[geometry, material, cubeList.length]} key={props.aux.wholeMaster}>
             </instancedMesh>
         </>
     )
@@ -850,12 +859,12 @@ export function MakeBoxesForTextureGroup(props: MakeBoxesForDemoSpacesProps) {
 // Same as above except takes an AuxTreeStatus instead of a group . This is for when we have a glb or texture that is not in the main tree but is in an aux tree.	
 export function MakeBoxesForTextureGroup2(props: MakeBoxesForDemoSpacesPropsAux) {
 
-    const [masterCube,err] = oct.StringToCube(props.aux.wholeMaster)
+    const [masterCube, err] = oct.StringToCube(props.aux.wholeMaster)
     if (err) {
         console.log("MakeBoxesForTextureGroup2: oops ", props.aux.wholeMaster, " error: ", err)
         return null
     }
-    if (! oct.VerifyCubeName(props.aux.wholeMaster)) {
+    if (!oct.VerifyCubeName(props.aux.wholeMaster)) {
         console.log("MakeBoxesForTextureGroup2: oops ", props.aux.wholeMaster, " is not a valid cube name")
         return null
     }

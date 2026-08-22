@@ -1,10 +1,8 @@
 
 
 import { assert } from 'console';
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import * as THREE from 'three';
-
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf';
 
 import { WriteAllTheCubeCacheOut, ReadAllTheCubeCacheIn } from './CacheFileStuff';
 
@@ -12,7 +10,6 @@ import { WriteAllTheCubeCacheOut, ReadAllTheCubeCacheIn } from './CacheFileStuff
 
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus'
 
-import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
 
 // garbage import { clearCache, myFileCacheIntf } from './DiskedCache';
 
@@ -38,14 +35,14 @@ async function doTheScript() {
     // to test prod:
     // dnstypes.SetKnotfreeServer("https://knotfree.net") // test in prod.
 
-    oct.gTreeStatusCache.clear() // start with an empty cache. 
+    oct.ClearTreeStatusCache() // start with an empty cache.
 
     // just load cache when we're done and then write at the end.
     // ReadAllTheCubeCacheIn()
 
     let startingTime = Date.now()
 
-    const builder = new bvts.BuildVisibleTreeStatus(myMapCacheIntf)
+    const builder = new bvts.BuildVisibleTreeStatus()
     const position = new THREE.Vector3(-2, 1.75, 10)
     const got = await builder.BuildVisibleTree("testmain", position)
     let endingTime = Date.now()
@@ -94,9 +91,9 @@ async function doTheScript() {
     // too much console.log("the cache: ", builder.cubeCache)
     // it's like 7 * 16 = 112 entries 
 
-    console.log("cache entries count: ", oct.gTreeStatusCache.size)
+    console.log("cache entries count: ", oct.TreeStatusCacheSize())
 
-    const cacheSize = oct.gTreeStatusCache.size
+    const cacheSize = oct.TreeStatusCacheSize() // this is the size of the cache before we do the torture test. It should be the same after.
 
     // for all the cache
     if (true) { // do this later.
@@ -171,7 +168,7 @@ async function doTheScript() {
             if (builder.showingLeaves.size !== 77) {
                 console.error("Error: showingLeaves is not 77. ", builder.showingLeaves.size)
             }
-            if (cacheSize !== oct.gTreeStatusCache.size) {
+            if (cacheSize !== oct.TreeStatusCacheSize()) {
                 console.error("Error: cache size changed. ", got)
             }
         }
@@ -180,7 +177,7 @@ async function doTheScript() {
     console.log("Time taken: ", endingTime - startingTime, "ms for ", runs, " runs.", "or", (endingTime - startingTime) / runs, "ms per run.")
     // Time taken:  165 ms for  1000  runs. or 0.165 ms per run.
 
-    console.log("cache entries count: ", oct.gTreeStatusCache.size)
+    console.log("cache entries count: ", oct.TreeStatusCacheSize())
 
     WriteAllTheCubeCacheOut()
 

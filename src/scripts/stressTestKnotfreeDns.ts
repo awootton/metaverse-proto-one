@@ -1,6 +1,5 @@
 // import * as dns from "dns/promises" NOPE. Never. We can't use this.
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
 
 // This is actually testing api1/dns-query and not the api1/nameService. probably because dns-query is public, no keys required.
@@ -8,7 +7,6 @@ import * as dnstypes from '../knotfree-ts-lib/3d/DnsTypes'
 
 // command to execute: 
 // npx ts-node src/scripts/stressTestKnotfreeDns.ts
-
 
 async function doTheScript() {
 

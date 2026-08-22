@@ -2,7 +2,8 @@
 
 export { };
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
+import { AnythingToDomainName } from '../knotfree-ts-lib/avatars/testServermap'
 
 
 // Very basic tests of the StringToCube and CubeToString functions and associated utilities.
@@ -13,7 +14,44 @@ import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
 
 import assert from 'node:assert/strict';
 
+
 {
+    const cubeStr = "http://localhost:3010/?domain=testmain-2n0u7w2p.vr&asset=undefined&type=undefined"
+    let [domainName,err] = AnythingToDomainName(cubeStr)
+    console.log(`domainName`, domainName,err)
+    assert.equal(err, null) // this not a fail
+}
+
+{
+    const cubeStr = "testmain-2n0u5w2p.r"
+    let [domainName,err] = AnythingToDomainName(cubeStr)
+    console.log(`domainName`, domainName,err)
+    assert.equal(err, null) // this not a fail
+}
+
+{
+    const cubeStr = "Atestmain-2n0u5w2p"
+    let [domainName,err] = AnythingToDomainName(cubeStr)
+    console.log(`domainName`, domainName)
+    assert.equal(err, null) // this NOT a fail
+    assert.equal(domainName, "testmain-2n0u5w2p")
+}
+
+{
+    const cubeStr = "3n2u5w1p"
+    let [domainName,err] = AnythingToDomainName(cubeStr)
+    console.log(`domainName`, domainName)
+    assert.notEqual(err, null) // this IS a fail
+}
+
+{
+    const cubeStr = "testmain-2n0u5w2p"
+    let [domainName,err] = AnythingToDomainName(cubeStr)
+    console.log(`domainName`, domainName,err)
+    assert.equal(err, null) // this not a fail
+}
+
+{ // this should be a fail. Wheres the domain name now is it a fail?
     const cubeStr = "3n2u5w1p"
     const [cube, error] = oct.AddressStringToCube(cubeStr)
     assert.equal(error, null)
@@ -29,19 +67,18 @@ import assert from 'node:assert/strict';
 {
     const cubeStr = "a-3n2u5w1p"
     const [cube, error] = oct.AddressStringToCube(cubeStr)
-    assert.notEqual(error, null)   
+    assert.notEqual(error, null)
 }
-
 
 {
     const cubeStr = "3n2u5w1p.vr"
     const [cube, error] = oct.AddressStringToCube(cubeStr)
-    assert.notEqual(error, null)   
+    assert.notEqual(error, null)
 }
 {
     const cubeStr = "3n2u5w1p-1.zyx"
     const [cube, error] = oct.AddressStringToCube(cubeStr)
-    assert.notEqual(error, null)   
+    assert.notEqual(error, null)
 }
 
 {
@@ -51,6 +88,7 @@ import assert from 'node:assert/strict';
     // note that since p is 1 that means the cube size is 2 so all the coordinates must be even numbers
     // or else it's an error.
 }
+
 {
     const cubeStr = "testmain-3n999u5w1p"
     const [cube, error] = oct.StringToCube(cubeStr)

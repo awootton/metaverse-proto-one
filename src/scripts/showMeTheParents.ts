@@ -1,10 +1,8 @@
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
-
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 
 // also test FromXToY
 
 // npx ts-node src/scripts/showMeTheParents.ts
-
 
 {
     let [result, err] = oct.FromXToY("from testmain-3n0u3e3p to testmain-3n0u3w3p")

@@ -23,7 +23,7 @@ import {
 
 import { Close } from '@mui/icons-material/';
 // import * as registry from '../ChangeRegistry';
-import * as app from '../App'
+import * as app from '../../App'
 
 type Props = {
     body: string

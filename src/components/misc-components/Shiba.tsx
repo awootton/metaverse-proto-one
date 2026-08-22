@@ -2,34 +2,25 @@ import React from 'react';
 
 "use client";
 
-import { useRef, useEffect } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import { FlyControls } from "@react-three/drei";
-import { DeviceOrientationControls } from "@react-three/drei";
-import { PerspectiveCamera } from "@react-three/drei";
-import { Environment, useCubeTexture } from "@react-three/drei";
-import { FirstPersonControls } from "@react-three/drei";
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { Mesh } from "three";
-import AtwBox from "./OriginAxisDisplay";
+import AtwBox from "./../OriginAxisDisplay";
 import { CameraWalker } from "./CameraWalker";
-import { TextureLoader, BackSide } from "three"
 import { useTexture, useGLTF } from "@react-three/drei";
-import * as oct from "../knotfree-ts-lib/3d/DomainNameOctTree"
+import * as oct from "../../knotfree-ts-lib/3d/Dns8Tree"
 
 import { Text } from '@react-three/drei';
+import { Stats } from 'fs';
 
 // import { useTexture, useGLTF } from '@react-three/drei';
 
-
-import Grid from "./Grid"
+// import Grid from "./misc-components/Grid"
 
 // import { Perf } from "r3f-perf" //  has error ./node_modules/r3f-perf/node_modules/three-mesh-bvh/src/utils/ExtensionUtilities.js Attempted import error: 'BatchedMesh' is not exported from 'three' (imported as 'THREE'). 
 // import  { Stats }  from "three/examples/jsm/libs/stats.module.js"
 // import { Stats } from "https://cdn.skypack.dev/@react-three/drei/Stats";
 
-import { Stats } from "@react-three/drei/core/Stats"
+// this would be nice if we weren't having problems. -->> import { Stats } from "@react-three/drei/core/Stats"
 
 // the origin is actually right in the middle of the dogs head.
 export function DrawDogComponent(props: { cube: oct.Cube }) {
@@ -50,6 +41,8 @@ export function DrawDogComponent(props: { cube: oct.Cube }) {
   const ypos = props.cube.y + size / 2
 
   const zpos = props.cube.z + size / 2 + size * .25
+  const FONT_URL = '/fonts/Inter_18pt-Bold.ttf'
+
   return (<>
     {/* <mesh ref={mesh} rotation-x={Math.PI * 0.00} position={[xpos, ypos, zpos]} scale={size * .5}>
       <primitive object={gltf.scene} />
@@ -59,10 +52,12 @@ export function DrawDogComponent(props: { cube: oct.Cube }) {
       <primitive object={scene} />
     </mesh>
 
-    <Text position={[xpos, props.cube.y + size * .8, props.cube.z + size / 2 + size /4]} fontSize={1.5} color="purple">Big Dog Models</Text>
   </>
   );
 }
+
+// just after last mesh. 
+//     <Text position={[xpos, props.cube.y + size * .8, props.cube.z + size / 2 + size / 4]} fontSize={1.5} font={FONT_URL} color="purple">Big Dog Models</Text>
 
 //      <Text position={[0, 0, 2.5]} fontSize={.5} color="red">E</Text>
 
@@ -113,13 +108,15 @@ export function Shiba() {
         {/* One Meter Cube */}
         <DrawDogComponent cube={{ x: 0, y: 3, z: 0, p: 0, world: "testmain" }} />
 
-        <Stats showPanel={0} />
 
       </Canvas>
 
     </div>
   );
 }
+
+        // <Stats showPanel={0} />
+
 
 
 // shiba gltf does not belong to me.

@@ -1,38 +1,45 @@
 
 /// <reference types="node" />
 
-// import * as dns from "dns/promises"
+// import * as dns from "dns/promises" this would be for the node only version, that we are not doing.
+
+// npx ts-node src/scripts/makeWorld.ts
+
+// This was an olde "show me some 3d" demo. It used to be in WorldTest1 I think 8/26 atw 
 
 // import { sendNameserviceCommand } from "./sendTheCommand"
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree'
 import { sendNameserviceCommand, sendNameserviceCommandHarder } from "../knotfree-ts-lib/3d/NamesApi"
-import { GetTheKeys } from '../knotfree-ts-lib/3d/ReserveVrFunction'
+import { GetTheKeys } from '../../broken-things/ReserveVrFunction'
 
 {
-let asset = "color:#545454" // a road color from the web.
-let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
-console.log("isImage:", isImage)
+    let asset = "color:#545454" // a road color from the web.
+    let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+    console.log("isImage:", isImage)
 }
 {
-let asset = "street.jpg" // a road color from the web.
-let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
-console.log("isImage:", isImage)
+    let asset = "street.jpg" // a road color from the web.
+    let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+    console.log("isImage:", isImage)
 }
 
 {
-let asset = "street.jpg:repeat:10" // a road color from the web.
-let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
-console.log("isImage:", isImage)
+    let asset = "street.jpg:repeat:10" // a road color from the web.
+    let isImage = /\.(jpg|jpeg|png|gif|bmp|tiff)$/i.test(asset)
+    console.log("isImage:", isImage)
 }
-
-
 
 console.log("isImage:")
 console.log("isImage:")
 console.log("isImage:")
 
 
-// test the knotfree sendNameserviceCommand api
+// test the knotfree sendNameserviceCommand api -- this would be good. Does it work? 
+// it runs up in knotfree.net for https or knotfree.io for http or knotfree.com:8085 for local development. (after 
+// you set 127.0.0.1 knotfree.com in /etc/hosts)
+// This text based command interface repeats in many places.
+// base64 is used in some places, and especiall when encryption is reeuired.
+// Under a microscope, this glyph '🔓' is an OPEN lock meaning no encryption is required
 
 // excercise the knotfree.net API to reserve a name and create a world. 
 // it doesn't really create anything, *** See tryingToReserve.ts for that. *** This is just to test the API calls and get a feel for how it works.
@@ -45,6 +52,7 @@ console.log("isImage:")
 
 let finished = false
 
+// **** This is the command set from the 
 // the help commend returns a list of commands, and the get-unix-time command returns the current unix time.
 // [bulk option] add key kv pairs
 // [delete] delete a name
@@ -66,6 +74,9 @@ let finished = false
 async function doTheScript() {
     console.log("Doing the script")
 
+    let res1: Promise<[string, Error | null]> = Promise.resolve(["hi", null] as [string, Error | null])
+    let res: [string, Error | null] | null = null
+
     // lookup a dns name from dns server
     const [[pubk, priv], bigKnotfreeToken, err] = GetTheKeys()
     if (err) {
@@ -73,9 +84,12 @@ async function doTheScript() {
         return
     }
 
-    // let res = await sendNameserviceCommandHarder("help", "no_name_needed", { pubk, priv })
-    // console.log("help made the grade", res)
+    res = null
+    res = await res1
+    console.log("help made the grade", res)
 
+    // This will set a TXT param named 'meta_group_id' in the Domain Name "testmain-1n0u1w4p_vr"
+    // maybe we should not. Let's skip this for now.
 
     const groupTextParameters: oct.GroupTextParameters = {
         id: "TmWyJB7iiPiEvT1HsyuFz6pK", // they can all draw, and act, together.
@@ -94,10 +108,10 @@ async function doTheScript() {
     const gtpStringBase64UrlWithEquals = "=" + gtpStringBase64Url
     console.log("groupTextParameters string base64url with equals:", gtpStringBase64UrlWithEquals)
 
-    let res = await sendNameserviceCommand("set option txt meta_group_id " + gtpStringBase64UrlWithEquals, "testmain-1n0u1w4p_vr", { pubk, priv })
+    // maybe later:
+    // res = await sendNameserviceCommand("set option txt meta_group_id " + gtpStringBase64UrlWithEquals, "testmain-1n0u1w4p_vr", { pubk, priv })
     console.log("set option txt meta_group_id", res)
     console.log("set option txt meta_group_id", res)
-
 
     // try {
     //     const resolver = new dns.Resolver();

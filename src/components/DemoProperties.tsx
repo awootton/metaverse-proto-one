@@ -6,7 +6,7 @@ import { RootState, useFrame } from '@react-three/fiber';
 
 import * as THREE from 'three';
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 // import { WorldDisplayState } from './WorldDisplayState';
 
 
@@ -38,8 +38,8 @@ import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
 //     return ""
 // }
 
-// RetreiveTheDemoCubes returns an array of cubes
-// It's supposed to be a comma dlimited list or else a from x to y expression.
+// RetreiveTheDemoCubes returns an array of cubes, from a text description.
+// It's supposed to from be a comma delimited list or else a from x to y expression.
 // It will parse the string and return an array of cubes. If it can't parse the string, it will return an empty array.
 export function RetreiveTheDemoCubes(): oct.Cube[] {
     // console.log("RetreiveTheDemoCubes called")
@@ -90,15 +90,19 @@ export function MakeBoxesForDemoSpaces(props: MakeBoxesForDemoSpacesProps) {
     const color = props.color || "#39FF14"
     // console.log("MakeBoxesForDemoSpaces with color: ", color, " and cubeList length: ", cubeList.length)
 
+    // MakeBoxesForDemoSpacesLines is just the lines - LINES I tell you.
+    // OutlineBoxComponentTextOnly has the text - it calls OutlineBoxComponentTextOnly 
+
+    // MakeOutlineBoxesForDemoSpaces calls OutlineBoxComponentTextOnly 
 
     return (
         <>
             <MakeOutlineBoxesForDemoSpaces
-                {...props} 
+                {...props}
             />
 
-            <MakeBoxesForDemoSpacesLines {...props} 
-          />
+            <MakeBoxesForDemoSpacesLines {...props}
+            />
         </>
     )
 }
@@ -120,7 +124,7 @@ export function MakeBoxesForDemoSpacesLines(props: MakeBoxesForDemoSpacesProps) 
     if (cubeList.length === 0)
         return null
     // assuming there's a cube list
-    const [aname,err] = oct.CubeToString(cubeList[0])
+    const [aname, err] = oct.CubeToString(cubeList[0])
     if (err) { // thinks than can never happen
         console.error("MakeBoxesForDemoSpacesLines error converting cube to string: ", err)
         return null
@@ -205,7 +209,7 @@ export function MakeBoxesForDemoSpacesLines(props: MakeBoxesForDemoSpacesProps) 
 
     console.log("MakeBoxesForDemoSpaces finished calculating positions. posIndex: ", posIndex, " lineCount: ", lineCount, " positions size: ", positions.length)
 
-
+    // where's the labels?? 
 
     // was #AAFF00 too hard to see.
     return (
@@ -222,6 +226,8 @@ export function MakeBoxesForDemoSpacesLines(props: MakeBoxesForDemoSpacesProps) 
                 </bufferGeometry>
                 <lineBasicMaterial attach="material" color={color} />
             </lineSegments>
+
+
 
             {/* {spacesArray.map((cubeStr, index) => {
                 const [cube, error] = oct.StringToCube(cubeStr)
@@ -259,12 +265,13 @@ function MakeOutlineBoxesForDemoSpaces(props: MakeBoxesForDemoSpacesProps) {
 
     const cubeList = props.demoCubeList
     // console.log("MakeOutlineBoxesForDemoSpaces will draw with index base: ", props.indexBase)
+    // key={oct.CubeToString(cube)[0]}
     return (
         <>
             {cubeList.map((cube, index) => {
-                return <OutlineBoxComponentTextOnly key={oct.CubeToString(cube)[0]} cube={cube} errorMsg={undefined} color={color}
+                return <OutlineBoxComponentTextOnly  cube={cube} color={color}
                     propsMessage={"this space 4 sale"}
-                    />
+                />
             })}
         </>
     )
@@ -274,11 +281,16 @@ function MakeOutlineBoxesForDemoSpaces(props: MakeBoxesForDemoSpacesProps) {
 
 export function OutlineBoxComponentTextOnly(props: {
     cube: oct.Cube,
-    errorMsg: string | undefined,
+  //   errorMsg: string | undefined,
     color?: string,
     propsMessage: string,
     // cameraPosition: THREE.Vector3
 }) {
+
+    // do it the hard way?
+    // can we default on the font? const FONT_URL = '/fonts/Inter_18pt-Bold.ttf'
+    // yes, that's much better.
+
     const cube = props.cube
     const color = props.color || "royalblue"
 
@@ -309,28 +321,45 @@ export function OutlineBoxComponentTextOnly(props: {
     // console.log("ratio ", ratio)
     // was .2 it's not following the camera.
 
-    if (ratio < .1) {
-        return (
-            <></>
-        )
-    }
+    // if (ratio < .1) {
+    //     return (
+    //         <></>
+    //     )
+    // }
+
+    // console.log("OutlineBoxComponentTextOnly with label ", label )
+
+//                {/* key={props.indexBase + 1} NEVER ADD A KEY TO A TEXT It will end up IN the text.*/}
+//    font={FONT_URL}
+
 
     return (
         <>
 
-            {/* we should billboard this. That would be funny. */}
             <Text color={textColor} anchorX="center" anchorY="middle"
                 position={[center[0], cube.y, center[2]]}
                 rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
                 fontSize={markerSize * 2}>
-                {/* key={props.indexBase + 1} NEVER ADD A KEY TO A TEXT It wyll end up IN the text.*/}
+             
                 {label}
-            </Text>
+            </Text>            
 
-            {/* <IfFarAway /> */}
         </>
     )
 }
+
+            {/* <IfFarAway /> */}
+
+            // <Text color={textColor} anchorX="center" anchorY="middle"
+            //     position={[center[0], cube.y, center[2]]}
+            //     rotation={[-Math.PI / 2, -Math.PI / 2, 0, 'ZYX']}
+            //     fontSize={markerSize * 2}>
+            //     font={FONT_URL}
+
+            //     {/* key={props.indexBase + 1} NEVER ADD A KEY TO A TEXT It wyll end up IN the text.*/}
+            //     {label}
+            // </Text>
+
 
 
 // This was wacky. Makes a big tangle of lines.

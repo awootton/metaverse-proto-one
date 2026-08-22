@@ -6,45 +6,40 @@ import * as THREE from 'three'
 import { Canvas, RootState, useFrame, useThree } from '@react-three/fiber'
 
 
-import * as oct from '../knotfree-ts-lib/3d/DomainNameOctTree';
+import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 import { OriginAxisDisplay } from './OriginAxisDisplay';
 
-import { myMapCacheIntf } from '../knotfree-ts-lib/3d/CacheIntf'; // just a map. 
 import * as bvts from '../knotfree-ts-lib/3d/BuildVisibleTreeStatus';
 // import { WorldDisplayState } from './WorldDisplayState';
-import * as pubsub from './PubSubTopicAndSubscribers'
-import * as sub from './PubSubSimple'
-import { LeafRenderingComponent } from './LeafRenderingComponent';
+// import * as pubsub from '../knotfree-ts-lib/avatars/PubSubTopicAndSubscribers'
+import * as sub from '../knotfree-ts-lib/avatars/PubSubSimple'
+import { LeafRenderingComponent } from './MiscCubeRenderElements';
 
-import { RetreiveTheDemoCubes, MakeBoxesForDemoSpaces } from './DemoProperties'
+import { RetreiveTheDemoCubes, MakeBoxesForDemoSpaces, MakeBoxesForDemoSpacesLines } from './DemoProperties'
 import * as utils from '../knotfree-ts-lib/3d/utils';
 
 import { OutlineBoxComponent } from './OutlineBoxComponent'
-import MakeBoxesForShowingLeaves from './MakeBoxesForShowingLeaves'
+import { MakeAuxGroupsFromShowingLeaves, MakeBoxesForShowingGroups } from './MakeBoxesForShowingLeaves'
 import * as messes from '../knotfree-ts-lib/3d/messageTypes'
+import { mainpubsub } from '../App';
 
 
-let samples = "meta_group_id.testmain-0n0u0e4p,meta_group_id.testmain-1n0u0e4p,meta_group_id.testmain-2n0u0e4p"
-// save in local storage for later?
-let sampleArray = samples.split(",").map(s => s.trim())
-console.log("sampleArray ", sampleArray)
-
+// let samples = "meta_group_id.testmain-0n0u0e4p,meta_group_id.testmain-1n0u0e4p,meta_group_id.testmain-2n0u0e4p"
+// // save in local storage for later?
+// let sampleArray = samples.split(",").map(s => s.trim())
+// console.log("sampleArray ", sampleArray)
 
 // I don't think you need half the stuff in the WorldDisplayState. It's just a bunch of stuff that should be in local storage. 
-// The only thing you need is the uniqueId and the toggleOnlyShowOutlineBoxes function. The rest is just noise.
+// The only thing you need is the   and the toggleOnlyShowOutlineBoxes function. The rest is just noise.
 // add back toggleOnlyShowOutlineBoxes later
 
 export type MainWorldDisplayProps = {
 
-  worldName: string // like a traditional at this point.
-  // Everyone passes it and nobody uses it. 
-  // uniqueId: string
+  worldName: string // like a traditional at this point. 
   onlyShowOutlineBoxes: boolean
   showOriginAxis: boolean
 
-  showingLeaves: oct.TreeStatus[]
-  // add demo spaces here too.? No we get them from storage.
- // indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
+  showingLeaves: string[]
 }
 
 // MainWorldDisplay the the main component that displays the world. 
@@ -61,7 +56,6 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
   // Show the demo spaces, or prospective properties, as outlines with their addresses.
   // we subscribe to this. The value doesn't matter.
   const [demoSpacesVersion, setDemoSpacesVersion] = React.useState("")
-  const [uniqueId, setUniqueId] = React.useState(utils.randomString(24)) // this is a unique identifier for the component instance, so we can use it to subscribe to pubsub messages and avoid pubsub cpnflicts.  
 
   // Don't show the normal content. Show boxes without outlines instead. comes on on the props. 
   // We're going to have to publish for this one.
@@ -70,54 +64,52 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
   //props.state.uniqueId, " show demos=", demoSpacesVersion, " onlyShowOutlineBoxes=", props.state.onlyShowOutlineBoxes, " showOriginAxis=", props.state.showOriginAxis)
 
   React.useEffect(() => {
-    console.log("MainWorldDisplay DemoPropertiesChanges" + uniqueId)
-    pubsub.subscribe("DemoPropertiesChanges", "MainWorldDisplay" + uniqueId, (status: Object, err: Error) => {
+    mainpubsub.subscribe("DemoPropertiesChanges", "MainWorldDisplay", (status: Object, err: Error) => {
 
-      console.log(`MainWorldDisplay${uniqueId} got pubsub message`, status, err)
       // I don't really care about the value I just want to re-trigger a calc of the property spaces.
+      const cubes = RetreiveTheDemoCubes()
       setDemoSpacesVersion("" + status) // force a redraw.
-      //const str = ReCalcTheDemoProperties(props.state) why?
-    })
+    },"resets demo properties to trigger a redraw")
     return () => {
-      pubsub.unsubscribe("DemoPropertiesChanges", "MainWorldDisplay" + uniqueId)
-      console.log(`MainWorldDisplay${uniqueId} useEffect DemoPropertiesChanges cleanup`)
+      mainpubsub.unsubscribe("DemoPropertiesChanges", "MainWorldDisplay" )
     }
-  }, [demoSpacesVersion]);
+  });// just subscribe all the time. 
 
   // I thought the key listener would be released so I put it here. But it doesn't get released. 
+// so I'll put it to sleep.
+  // React.useEffect(() => {
+  //   const myHandleKeyDown = (e: KeyboardEvent) => {
+  //     switch (e.key) {
+  //       case '=': {
+  //         if (e.ctrlKey && e.shiftKey) {
+  //           console.log("ctrl shift equals key pressed");
+  //           // but, the state has a toggle for this.
+  //           // props.toggleOnlyShowOutlineBoxes()
+  //         }
+  //       }
+  //         break;
+  //     }
+  //   };
+  //   // We STILL need to unhook this addEventListener ?? 
+  //   window.addEventListener('keydown', myHandleKeyDown);
+  //   // console.log("NavigationCamera installation: added keydown listener");
+
+  //   return () => {
+  //     // how do we make THIS happen so that the dialog will work? Just don't make the main canvas!!! 
+  //     console.log("NavigationCamera cleanup: removing keydown listener");
+  //     window.removeEventListener('keydown', myHandleKeyDown);
+  //   }
+  // }, []);
 
   React.useEffect(() => {
-    const myHandleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case '=': {
-          if (e.ctrlKey && e.shiftKey) {
-            console.log("ctrl shift equals key pressed");
-            // but, the state has a toggle for this.
-            // props.toggleOnlyShowOutlineBoxes()
-          }
-        }
-          break;
-      }
-    };
-    // We STILL need to unhook this addEventListener ?? 
-    window.addEventListener('keydown', myHandleKeyDown);
-    // console.log("NavigationCamera installation: added keydown listener");
 
-    return () => {
-      // how do we make THIS happen so that the dialog will work? Just don't make the main canvas!!! 
-      console.log("NavigationCamera cleanup: removing keydown listener");
-      window.removeEventListener('keydown', myHandleKeyDown);
-    }
-  }, []);
-
-  React.useEffect(() => {
-
+    // TODO: move this somewhere else 
 
     // subscribe for changes to the various GLB's that the iFrames are going to declare.
     // we collect them and make into auxRecords. 
 
     // no. The iFrames know their name and acan publush directly,
-    sub.subscribe("GlbCreatedMessage", (message: messes.GlbMessage, err: Error | null) => {
+    sub.subscribe("xxxGlbCreatedMessage", (message: messes.GlbMessage, err: Error | null) => {
 
       const leafName = message.name
 
@@ -144,13 +136,13 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
       // now, can we reforce a redraw of the leaf. We know it's name
       // this is really reset drawing info and the redraw is inferred.
       console.log("MainWorldDisplay got GlbMessage, sending to leaf ", leafName)
-      sub.publish(leafName + "-redraw", message.key)
+     //  sub.publish(leafName + "-redraw", message.key)
       //  }
     });
     return () => {
-      sub.unsubscribe("GlbCreatedMessage");
+      sub.unsubscribe("xxxGlbCreatedMessage");
     };
-  }, []);
+  });
 
   // these would get flushed with every re-render, which would be bad. We need them to persist. So we put them in the state.What state?
   // previousCameraPosition: new THREE.Vector3(1e999, 0, 0),
@@ -180,8 +172,13 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
     // need to filter these!  
     if (demoCubes.length > 0) {
       const intersector = new oct.OctTreeIntersector(props.worldName)
-      for (const treeStatus of props.showingLeaves) {
-        intersector.AddKnownCube(treeStatus.cube)
+      for (const leafName of props.showingLeaves) {
+        const [cube, err] = oct.StringToCube(leafName)
+        if (err) {
+          console.error("ReCalcTheDemoProperties: error converting leafName to cube ", leafName, err)
+          continue
+        }
+        intersector.AddKnownCube(cube)
       }
 
       for (const cube of demoCubes) {
@@ -205,6 +202,22 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
     return null
   }
 
+  const MakeBoxesForShowingArgs = {
+    worldName: props.worldName,
+    showingLeaves: props.showingLeaves,
+    onlyShowOutlineBoxes: props.onlyShowOutlineBoxes,
+    showOriginAxis: props.showOriginAxis
+  }
+  // This does not return a component. It processes the leaves into the groups.
+  // and then publishes the groups. It takes a while but comes right back with nothiing.
+  // The things it found up in the pubsub system. 
+  // They get picked up the MakeBoxesForShowingGroups component and rendered as iFrames.
+
+
+  MakeAuxGroupsFromShowingLeaves(MakeBoxesForShowingArgs);
+
+// MakeBoxesForDemoSpacesLines
+
   return (<>
 
     {showAxis()}
@@ -217,36 +230,38 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
     <OutlineBoxComponent cube={cube2} errorMsg={undefined} propsMessage={"this space 4 sale"} /> */}
     {/* <OutlineBoxComponent cube={cube3} errorMsg={undefined} propsMessage={"Condemned. "} /> */}
 
-    <MakeBoxesForDemoSpaces
+    <MakeBoxesForDemoSpacesLines
       worldName={props.worldName}
       demoCubeList={demoCubes}
-     // indexBase={props.indexBase}
       color={"green"}
     />
 
-    <MakeBoxesForShowingLeaves
+    
 
-      // worldName: string // like a traditional at this point.
-      // // Everyone passes it and nobody uses it. 
-      // uniqueId: string
-      // onlyShowOutlineBoxes: boolean
-      // showOriginAxis: boolean
-
-      // showingLeaves: oct.TreeStatus[]
-      // // add demo spaces here too.? No we get them from storage.
-      // indexBase: number // this is a base index for the components to be rendered in the scene. We want to make sure the surrounding boxes are drawn first, so they are behind the leaves.
-
+    <MakeBoxesForShowingGroups 
       worldName={props.worldName}
-      showingLeaves={props.showingLeaves}
-   //   indexBase={props.indexBase + demoCubes.length}
       onlyShowOutlineBoxes={props.onlyShowOutlineBoxes}
       showOriginAxis={props.showOriginAxis}
-
+      showingLeaves={props.showingLeaves}
     />
 
   </>)
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// can I trash this yet?
 
 // we'll use the names, sorted, so it can tell when it changes.
 // no state for this. We pass it in to tigger.

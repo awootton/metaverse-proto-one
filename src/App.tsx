@@ -1,42 +1,45 @@
 /* eslint-disable */
 import * as THREE from 'three'
 import * as React from 'react'
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+
 import preval from 'preval.macro'
 import { MenuItem, DropdownMenu } from "./components/MainMenu"
 import { StarsDialog } from './knotfree-ts-lib/components/StarsDialog'
 import Switch from '@mui/material/Switch'
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 
-
-import { myMapCacheIntf } from './knotfree-ts-lib/3d/CacheIntf'; // just a map.
-import * as oct from './knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from './knotfree-ts-lib/3d/Dns8Tree'
 import * as utils from './knotfree-ts-lib/3d/utils'
 
-import * as pubsub from "./components/PubSubTopicAndSubscribers"
+import * as pubsub from "./knotfree-ts-lib/avatars/PubSubTopicAndSubscribers"
+import * as sub from "./knotfree-ts-lib/avatars/PubSubSimple"
 
-import { MyInputDialog } from './knotfree-ts-lib/components/MyInputDialog'
 import AppCanvas from './components/AppCanvas'
 import AboutGotohereDialog from './components/AboutGotohereDialog'
 
 import { MakeListOfIFrames } from './FrameUtils/MakeListOfIFrames'
 
+// This is the shopping thing now, not using orbital controls.
+import { UnRealEstateShopper } from './components/OrbitPropertyDialog2'
+import { IdentityDialog } from './components/IdentityDialog'
+import { MiscInputDialog } from './components/misc-components/MiscInputDialog'
+
+
 const doClear = new URLSearchParams(window.location.search).get("clear")
-// I just changed some definitions so lets start fresh.
-// in all cases it's called groupId.id now and not groupId.grp. I changed it to be more clear.
 if (doClear === "true") {
-  console.log("App got call to clear caches ", doClear)
+  // console.log("App got call to clear caches ", doClear)
   // eg http://localhost:3020/?clear=true
   localStorage.clear() // kills other things too. probably a bad idea.
   oct.ClearChildBitsCache()
-  myMapCacheIntf.clear()
+  oct.ClearTreeStatusCache()
 }
 
 let startingCube: oct.Cube = { world: "testmain", x: 1, y: 2, z: 10, p: 0 }  // in meters
 
 const locparam = new URLSearchParams(window.location.search).get("location")
 if (locparam) {
-  console.log("App got location param ", locparam)
+  // console.log("App got location param ", locparam)
   // eg http://localhost:3020/?location=testmain.2s0u5e4p.vr
   const [startingCubeTmp, err] = oct.StringToCube(locparam)
   if (err) {
@@ -44,205 +47,209 @@ if (locparam) {
   }
   else {
     startingCube = startingCubeTmp
-    console.log("App parsed location param ", locparam, " to cube ", startingCube)
+    // console.log("App parsed location param ", locparam, " to cube ", startingCube)
   }
 }
 
 type AppState = {
-
   worldName: string,
-  // previousCameraPosition: THREE.Vector3,
-  // currentCameraPosition: THREE.Vector3,
-  // timeSinceLastCameraMovement: 0,
-  // each view should really have their own one of these.
-  //theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
-  // no, only for subs uniqueId: string,
-  // onlyShowOutlineBoxes: boolean,
-  // showOriginAxis: boolean,
-  // toggleOnlyShowOutlineBoxes: () => any
-
 }
 
 // const startingUniqueId = utils.randomString(24) // this is a unique identifier for the component instance, 
 // so we can use it to subscribe to pubsub messages and avoid conflicts between multiple instances.
-// it must old still and still be unique.
+// it must hold still and be unique.
 
 // these postiions that change should not be ion here.
 
 export const DefaultCameraPosition = new THREE.Vector3(-2, 1.75, 10);
 
 const InitialGlobalAppDisplayState: AppState = {
-
   worldName: startingCube.world,
-  // previousCameraPosition: new THREE.Vector3(-2, 1.75, 10),
-  // currentCameraPosition: new THREE.Vector3(-2, 1.75, 12),
-  // timeSinceLastCameraMovement: 0,
-  // each view should really have their own one of these.
-  //theGlobalTree: new bvts.BuildVisibleTreeStatus(myMapCacheIntf), // we get our own tree !!
- // no uniqueId: startingUniqueId,
-  //onlyShowOutlineBoxes: false,
-  // broken feature showOriginAxis: true,
-  // toggleOnlyShowOutlineBoxes: () => {
-  //   console.log("App OnlyShowOutlineBoxes toggle needs override. " +
-  //     "This is a placeholder. It should be overridden by the parent component.")
-  // }
 }
 
-console.log("App url ", window.location.href)
+// const XCanvasWithProps = Canvas as React.ComponentType<
+//   React.ComponentPropsWithoutRef<'canvas'> & {
+//     camera?: { position: THREE.Vector3 }
+//     children?: React.ReactNode
+//   }
+// >
 
-// The problem is that NewestAppToggleOnlyShowOutlineBoxes and the state change every time.
-// We must call the latest.
-var LatestAppToggleOnlyShowOutlineBoxes: (state: AppState) => void = () => { }
+// console.log("App url ", window.location.href)
+// console.log("App url ", window.location.href)
 
 export default function App() {
 
-  // let's parse the url and see if we have a world name in it.
-  // eg http://localhost:3020/?location=testmain.2s0u5e4p.vr
+  // how much space in in the demospaces? // refactor to to something like "shopping"
+  // and less lke "demo".
 
-  // from appCanvas export const DefaultCameraPosition = new THREE.Vector3(-2, 1.75, 10);
+  let str = localStorage.getItem("DemoProperties")
 
+  // This should NOT be loading over and over. 
   // console.log("App starting with localStorage cache size  ", localStorage.length)
   // console.log("App starting with localStorage child bits cache loadout of   ", oct.GetTheWholeChildBitsLocalCache().size, " items.")
 
   //because we can reference a function before it's defined
   const startingAppDisplayState: AppState = {
     ...InitialGlobalAppDisplayState,
-   //  showOriginAxis: true,
-
-    // onlyShowOutlineBoxes: false,
-    // toggleOnlyShowOutlineBoxes: () => { LatestAppToggleOnlyShowOutlineBoxes(startingAppDisplayState) }
   }
 
   const [onlyShowOutlineBoxes, setOnlyShowOutlineBoxes] = useState(false);
 
-
   const [appDisplayState, setAppDisplayState] = useState(startingAppDisplayState);
 
-  function ToggleOnlyShowOutlineBoxes() { // whY do we even need this?
-    let showThem = !onlyShowOutlineBoxes;   
+  function ToggleOnlyShowOutlineBoxes() { // why do we even need this?
+    let showThem = !onlyShowOutlineBoxes;
     setOnlyShowOutlineBoxes(showThem)
+    mainpubsub.publish("ShowingLeavesChanges", [])
   }
-  // really a useEffect thing. No?
- // LatestAppToggleOnlyShowOutlineBoxes = NewestAppToggleOnlyShowOutlineBoxes
-
-  // console.log("App Starting with  ", appDisplayState. uniqueId)
 
   const hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
   // console.log("App hideHelpOnStart ", hideHelpOnStart)
   const [hideHelpOnStartState, setHideHelpOnStartState] = useState(hideHelpOnStart === null);
+
+  // dialogs
   const [helpClicked, setHelpClicked] = useState(hideHelpOnStart === null);
-  const [stars, setStars] = useState(false);
-  const [orbit, setOrbit] = useState(false);
+  const [shopping, setShopping] = useState(false);
+  const [identityDialog, setIdentityDialog] = useState(false);
+  const [miscDialog, setMiscDialog] = useState(true); // open the dialog
+  const [stars, setStars] = useState(false); // easter egg
 
   const axisWillShow = localStorage.getItem("suppressAxisAtOrigin") === null;
 
   // we have to set this twice. FIXME: 
   const [showAxisAtOrigin, setShowAxisAtOrigin] = useState(axisWillShow);
+  const [orbit, setOrbit] = useState(false);
 
-  const [showingLeaves, setShowingLeaves] = useState([] as oct.TreeStatus[])
+
+  // Change this from showingLeaves to leavesToRender.
+  // The leavesToRender is the list of leaves that we want to render in the scene.
+  // right now it's hundreds of cubes but could be thousands. I don't know what happens then.
+  // It comes from another place and comes in here by subscription. 
+  // We don't want to change it here. We just want to render it.
+  // The is a list of verifiable names for oct.Cube's
+  const [leavesToRender, SetLeavesToRender] = useState([] as string[])
 
   const [loadingMessage, setLoadingMessage] = useState("loading...")
 
-  // FIXME: not working or tested. Fun to dream though.
-  // we have a dialog for it and we have this state but nobody is using it.
-  const [worldNameOpen, setWorldNameOpen] = useState(false); // open the dialog
-  const [worldName, setWorldName] = useState("testmain");
-  const [uniqueId, setUniqueId] = useState(utils.randomString(24));
+  // We should be able to just render once and then let the canvas do it's thing.
 
-  // use effect to subscribe to the pubsub topic for showingLeaves, which is what the MainWorldDisplay will publish when it has new leaves to show.
+  const [worldName, setWorldName] = useState("testmain");
+
+  // use effect to subscribe to the pubsub topic for leavesToRender, which is what the MainWorldDisplay will publish when it has new leaves to show.
 
   // we have a leaves publish for what's showing on the main world display, and then we pass that down to the AppCanvas 
   // which passes it down to the MainWorldDisplay which uses it to know what to show.
 
-  // We have ANOTHER publish for the leaves showing on the orbital view, which is separate from the main world display. 
-  // the orbital canvas can useFrame and get the camera and then order a bug async tree build (a whole ms !)
-  // and then publish which will get picked up by it's parent which will pass the new list as a prop which will 
-  // force a re-render and then the orbital canvas will show the new leaves.
-
-  // btw. add the demo properties in there as well. Somewhere along the way the demp spaces get filtered.
-
   React.useEffect(() => {
 
-    // const unsubscribe = 
-    pubsub.subscribe("ShowingLeavesChanges", "App" +  uniqueId,
-      (leaves: oct.TreeStatus[]) => {
-        // it's sending me a damn map. wtf. 
-        // console.log("App got showingLeaves ", leaves)
+    // It's just the names. We try to keep them sorted.
+    mainpubsub.subscribe("ShowingLeavesChanges", "App",
+      (leaves: string[]) => {
+
         // trigger a re-render of the AppCanvas with the new leaves.
-        // it HAS TO be TreeStatus[] because the MainWorldDisplay is going to use it to render the leaves.
-        // can we check here?
-        for (const leaf of leaves) {  // Ii guess this is pretty good.
-          if (!leaf.name || !leaf.groupId || !leaf.cube) {
-            console.error("App got showingLeaves with invalid leaf ", leaf)
+        // We'll just check that they're in the cache and that's good enough.
+        // console.log("App subscribe got ShowingLeavesChanges names ", Array.from(oct.gTreeStatusCache.keys()).join(","))
+        // console.log("App subscribe got ShowingLeavesChanges entities ", Array.from(oct.gTreeStatusCache.values()).map(e => e.name).join(","))
+        // This is just a verification.
+        for (const leafName of leaves) {
+          const leaf = oct.GetTreeStatusFromCache(leafName)
+          if (!leaf) {
+            console.error("ERROR App got showingLeaves with a leaf that is not in the cache ", leafName)
           }
         }
-        console.log("App got showingLeaves ", leaves.length, " leaves.")
-        setShowingLeaves(leaves)
-      })
+
+        // did they change though?
+        if (DidLeavesChange(leavesToRender, leaves)) {
+          SetLeavesToRender([...leaves]) // force a re-render of the AppCanvas with the new leaves.???
+        } else {
+          // console.log("App got showingLeaves that did NOT change ", leaves.length, " leaves.")
+        }
+      },"common state setter for leavesToRender")
 
     return () => {
-      pubsub.unsubscribe("ShowingLeavesChanges", "App" +  uniqueId)
+      mainpubsub.unsubscribe("ShowingLeavesChanges", "App")
     }
-  }, [showingLeaves])
+  }, [leavesToRender]) // important to do this so we have live leavesToRender values.
+  // It doesn't hurt to re-subscribe.
+
+  // DidLeavesChange checks if the leaves changed by sorting them my name
+  // and then just comparing the names. If they are the same then we don't need to re-render.
+  // The beauty part is that we don't even have to sort the previous list
+  // because we always sorted the that list before we publish it. So we can just compare the names in order.
+  // Thanks CP for writing the fluffiest possible version of this possible. lol.
+  function DidLeavesChange(oldLeaves: string[], newLeaves: string[]): boolean {
+    if (oldLeaves.length !== newLeaves.length) {
+      return true
+    }
+    // let's keep them sorted by name all the time.
+    // oldLeaves.sort((a, b) => a.localeCompare(b));
+    // The old leaves are already sorted from the last time we published them. 
+    // So we don't have to sort them again. We just have to sort the new leaves before we compare them.
+    newLeaves.sort((a, b) => a.localeCompare(b));
+    for (let i = 0; i < oldLeaves.length; i++) {
+      const oldLeaf = oldLeaves[i]
+      const newLeaf = newLeaves[i]
+      if (oldLeaf !== newLeaf) {
+        return true
+      }
+    }
+    return false
+  }
 
   React.useEffect(() => { // loading message.
-
-    pubsub.subscribe("LoadingMessage", "App" +  uniqueId,
+    mainpubsub.subscribe("LoadingMessage", "App",
       (message: string) => {
-        // it's sending me a damn map. wtf. 
-        // console.log("App got loadingMessage ", message)
         setLoadingMessage(message)
-      })
-
+      },"Just changes the 'loading' message.")
     return () => {
-      pubsub.unsubscribe("LoadingMessage", "App" +  uniqueId)
+      mainpubsub.unsubscribe("LoadingMessage", "App")
     }
-  }, [loadingMessage])
+  }) // loadingMessage
+  // run every time }, []) // loadingMessage, not just once or when loading message changes. 
+  // We want to subscribe every time the component renders so that the callback has the LATEST state. EVERY TIME.
 
 
   const MainMenuActions: MenuItem[] = [
     { id: "About", label: "About", onClick: () => setHelpClicked(true) },
     // { id: "Enter-a-pace", label: "Orbital view.", onClick: () => setOrbit(true) },
-    { id: "misc-options", label: "Explore kooky options.", onClick: () => setWorldNameOpen(true) },
+    { id: "Shopping-for-space", label: "Shopping for space.", onClick: () => setShopping(true) },
+
+    { id: "Identity", label: "Identity.", onClick: () => setIdentityDialog(true) },
+
+    { id: "misc-options", label: "Optional options.", onClick: () => setMiscDialog(true) },
     // { id: "premium", label: "Upgrade to Premium (Locked)", onClick: () => {}, disabled: true },
     // { id: "logout", label: "Sign Out", onClick: () => alert("Logging out!") },
     { id: "Egg", label: "easter egg", onClick: () => setStars(true) },
   ];
 
-  var shouldShowOrbitalCanvasDisplay = false
+  const containerStyleSkinny = {
+    width: '100%',
+    height: '12px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0'
+  } as const
 
-  var shouldShowMainWorldDisplay = true
 
-  if (orbit) { // || helpClicked || stars) {
-    shouldShowMainWorldDisplay = false
-    // for now, we don't want to show the main world display when we're in orbital view, 
-    // because the orbital view is meant to be a separate thing. 
-    // We could also show it and just have the orbital view be a different camera, but for now we'll just hide it.
-    // maybe it will unhook it's keybpoard controls when it unmounts and then the dialogs will work better. sheesh.
-  }
-  if (orbit) {
-    shouldShowOrbitalCanvasDisplay = true
-  }
+  // MakeListOfIFrames is now just a list of spans
+  {/* {MakeListOfIFrames()} */ }
 
-  // console.log("App refresh  refresh  refresh  refresh  worldName ", worldName, "hideHelpOnStartState ", hideHelpOnStartState)
-
-  // console.log("OrbitPropertyDialog has state ", orbit)
-  // console.log("OrbitPropertyDialog shouldShowOrbitalCanvasDisplay ", shouldShowOrbitalCanvasDisplay)
-  // console.log("OrbitPropertyDialog shouldShowOrbitalCanvasDisplay ", shouldShowOrbitalCanvasDisplay)
+  // we can't do this here or there are constant re-renders. We have to do it in the AppCanvas where the camera is.
+  // then we pub it here to the compass.
+  //let compassAngle = 270         <Compass heading={compassAngle} size={32} />
 
   return (
     <>
 
-      {MakeListOfIFrames()}
-
-      {/* <div className="normal div" style={{ alignItems: 'center', fontSize: '12px' }}> gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc   gi kwlwc  
-        <button onClick={() => { setStars(true) }}>push me wh</button>
-      </div> */}
+      <div className="skinny-bar" style={containerStyleSkinny}  >
+        {MakeListOfIFrames()}
+      </div>
 
       {/* top bar */}
       <span style={{ display: 'flex', gap: '4px', alignItems: 'center', fontSize: '12px' }}>
         <div>github.com/awootton/metaverse-proto-one </div>
-        <div><a href="https://x.com/alan_t_wootton" target="_blank" rel="noopener noreferrer">X blog</a> </div>
+        <div><a href="https://x.com/alan_t_wootton" target="_blank" rel="noopener noreferrer">blog</a> </div>
         <div>Build Date: {preval`module.exports = new Date().toLocaleString();`}.</div>
         <DropdownMenu triggerLabel={(<div><MenuOpenIcon /></div>)} items={MainMenuActions} />
         {/* <StarPurple500Icon onClick={() => { setStars(true) }}  /> */}
@@ -251,20 +258,25 @@ export default function App() {
           onClick={() => ToggleOnlyShowOutlineBoxes()} />X-Ray
         <Switch checked={orbit} size="small"
           onClick={() => setOrbit(!orbit)} />Orbital View
+
+        <Compass size={32} />
       </span >
 
       <AppCanvas
-
         worldName={worldName}
-       // uniqueId={appDisplayState.uniqueId}
         showOriginAxis={showAxisAtOrigin}
         onlyShowOutlineBoxes={onlyShowOutlineBoxes}
-        shouldShowMainWorldDisplay={shouldShowMainWorldDisplay}
-        initialCameraPosition={DefaultCameraPosition} // appDisplayState.currentCameraPosition}
-        showingLeaves={showingLeaves}
+        UseOrbitalControls={orbit}
+        initialCameraPosition={DefaultCameraPosition}
+        showingLeaves={leavesToRender}
       />
 
-      {/* <MarkdownDialog
+      {/* <Canvas id="canvas0"
+        camera={{ position: [0, 1.75, -4] }}
+      >  <CubeWithEdges cube={cube0} />
+      </Canvas > */}
+
+      {/* <MarkdownDialog the old about dialog. It's now the AboutGotohereDialog
         open={helpClicked}
         onClose={() => setHelpClicked(false)}
         title={"Hi"}
@@ -272,122 +284,80 @@ export default function App() {
         inject={(<><Switch checked={!hideHelpOnStartState} size="small" onClick={() => toggleHideHelpOnStart()} />Hide Help on Start</>)}
       /> */}
 
-      <AboutGotohereDialog
+      < AboutGotohereDialog
         open={helpClicked}
-        onClose={() => setHelpClicked(false)}
+        onClose={() => setHelpClicked(false)
+        }
         title={"Hi"}
         body={helpText}
         inject={(<><Switch checked={!hideHelpOnStartState} size="small" onClick={() => toggleHideHelpOnStart()} />Hide Help on Start</>)}
       />
 
-      <StarsDialog
+      < StarsDialog
         open={stars}
         onClose={() => { setStars(false) }} //
         onConfirm={() => { }}
         title=""
       />
 
-      <MyInputDialog
-        open={worldNameOpen}
-        onClose={() => { setWorldNameOpen(false) }}
+      <MiscInputDialog
+        open={miscDialog}
+        onClose={() => { setMiscDialog(false) }}
         title="Explore some options."
         body="When there's other worlds besides just 'testmain' put the name here.
+        Of course it's broken, so nevermind. I'll get there.
          Follow my progress online. @alan-t-wootton. I'm working on it. 
          Volunteers? 
          "
         onConfirm={(str) => {
           console.log("Confirmed with input: ", str)
-          setWorldNameOpen(false)
+          setMiscDialog(false)
           if (str.length >= 8) {
             setWorldName(str)
           }
         }}
         label="Enter a world name"
         default={worldName}
-        inject={(
-          <>
-            <br />
-            <div>
-              <Switch checked={showAxisAtOrigin} size="small" onClick={() => toggleShowAxisAtOrigin()} />Show the axis at the origin
-            </div>
-            <div>
-              <Switch checked={onlyShowOutlineBoxes} size="small" onClick={() => toggleOnlyShowOutlineBoxes()} />Show owned properties as blue cubes. See their addresses.
-            </div>
-          </>
-        )}
+        showOriginAxis={showAxisAtOrigin}
+        toggleShowAxisAtOrigin={() => toggleShowAxisAtOrigin()}
+
+        onlyShowOutlineBoxes={onlyShowOutlineBoxes}
+        toggleOnlyShowOutlineBoxes={() => toggleOnlyShowOutlineBoxes()}
       />
 
+      <UnRealEstateShopper // not orbital, SHOPPING!  SHOPPING!  SHOPPING! 
+        open={shopping}
+        onClose={(reason: string) => {
 
-      {/* <OrbitPropertyDialog
+          if (reason === 'wasCloseButton') {
+            setShopping(false)
+          }
+          // don't just quit from clicks and the drags that happen in an orbital view.
+        }}
+        title="Space Shopping."
+        // body="try a name"
+        onConfirm={() => {
+          // we're going to send garbage and they can get the 
+          // real version from local storage.
+          mainpubsub.publish("DemoPropertiesChanges", utils.RandomString(24))
+        }
+        } worldName={worldName}        //   console.log("Confirmed with input: ", str)
+      />
 
-        open={orbit && ! shouldShowMainWorldDisplay}
-
-        shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay} // I suppose this should be true.
-        worldName={worldName}
-        showOriginAxis={showAxisAtOrigin}
-        onClose={() => { setOrbit(false) }} //
-        onConfirm={() => { }}
-        title="Orbital View"
-      /> */}
+      <IdentityDialog
+        open={identityDialog}
+        onClose={() => { setIdentityDialog(false) }}
+        title="Let's establish the identity of some things."
+        body=""
+        onConfirm={(str) => {
+          console.log("Confirmed with input: ", str)
+        }}
+        label="Type or use a suggested passphrase"
+      //  default={worldName}
+      />
 
     </>
   )
-  {/*  made skinny and moved to top {MakeListOfIFrames()} */ }
-
-  //       {MakeTheOrbitDialog()}
-
-
-  //   <Orbit PropertyDialog
-  //   open={orbit}
-  //   // spaces={demo PropertiesState} // this would be the comma delimited list of properties that you want to load and display in the 3D view. The dialog would have an input box where you can enter these, and an OK button to confirm.
-  //   // worldName={worldName}
-  //   // maybe the dialog should make it's own state thing for it's own canvas.
-  //   worldDisplayState={{
-  //     ...appDisplayState,
-  //     showOriginAxis: showAxisAtOrigin, // the SetState here
-  //     toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
-  //   }}
-  //   shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
-
-  //   onClose={() => { setOrbit(false) }} //
-  //   onConfirm={() => { }}
-  //   title="Orbital View"
-  // />
-
-
-
-  // function Make TheOrbitDialog() {
-
-  //   // the problem is that he doesn't get the list of leaves.
-  //   // nobody is saving it for hi.
-
-  //   if (orbit || true) {
-  //     return (
-
-  //       <Orbit PropertyDialog
-  //         open={orbit}
-  //         // spaces={demo PropertiesState} // this would be the comma delimited list of properties that you want to load and display in the 3D view. The dialog would have an input box where you can enter these, and an OK button to confirm.
-  //         // worldName={worldName}
-  //         // maybe the dialog should make it's own state thing for it's own canvas.
-  //         worldDisplayState={{
-  //           ...appDisplayState,
-  //           showOriginAxis: showAxisAtOrigin, // the SetState here
-  //           toggleOnlyShowOutlineBoxes: () => LatestAppToggleOnlyShowOutlineBoxes(appDisplayState)
-  //         }}
-  //         shouldShowOrbitalCanvasDisplay={shouldShowOrbitalCanvasDisplay}
-
-  //         onClose={() => { setOrbit(false) }} //
-  //         onConfirm={() => { }}
-  //         title="Orbital View"
-  //       />
-  //     )
-  //   } else return (<>
-
-  //   </>
-  //   )
-  // }
-
-  //  
 
   function toggleHideHelpOnStart() {
     let hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
@@ -398,13 +368,13 @@ export default function App() {
     }
     hideHelpOnStart = localStorage.getItem("hideHelpOnStart");
     setHideHelpOnStartState(hideHelpOnStart === null);
-    console.log("App toggleHideHelpOnStart ", hideHelpOnStart, hideHelpOnStartState)
+    // console.log("App toggleHideHelpOnStart ", hideHelpOnStart, hideHelpOnStartState)
   }
 
   function toggleOnlyShowOutlineBoxes() {
     // there's no storage for this one. Imagine the confusion that could result
     let showThem = !onlyShowOutlineBoxes;
-    console.log("App OnlyShowOutlineBoxes is now ", showThem)
+    // console.log("App OnlyShowOutlineBoxes is now ", showThem)
     setOnlyShowOutlineBoxes(showThem);
     const newState = {
       ...appDisplayState,
@@ -422,7 +392,7 @@ export default function App() {
 
     weWillShowAxis = !weWillShowAxis; // now it's toggled.
 
-    console.log("App weWillShowAxis ", weWillShowAxis)
+    // console.log("App weWillShowAxis ", weWillShowAxis)
 
     if (weWillShowAxis) { // is this toggled? 
       localStorage.removeItem("suppressAxisAtOrigin");
@@ -436,10 +406,57 @@ export default function App() {
       showAxisAtOrigin: weWillShowAxis,
     }
     setAppDisplayState(newState)
-    console.log("App weWillShowAxis ", weWillShowAxis)
+    // console.log("App weWillShowAxis ", weWillShowAxis)
   }
 }
 
+export const mainpubsub = new pubsub.PubSubTopicAndSubscribers("mainpubsub","mainland")
+
+export const Compass = ({ size = 150 }) => {
+
+  useEffect(() => {
+    sub.subscribe("CompassHeading", (avalue: any) => {
+      const newHeading = avalue as number
+      // convert to degrees and round to the nearest integer
+      const newHeadingDegrees = Math.round(newHeading * (180 / Math.PI));
+      setHeading(newHeadingDegrees)
+    })
+    return () => {
+      sub.unsubscribe("CompassHeading")
+    }
+  }, []) // important to do this so we have live heading values.
+  // It doesn't hurt to re-subscribe (too much).
+
+  const [heading, setHeading] = useState(180)
+
+  return (
+    <div style={{ width: size, height: size, position: 'relative' }}>
+      <svg
+        viewBox="0 0 100 100"
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: `rotate(${-heading}deg)`,
+          transition: 'transform 0.2s ease-out',
+        }}
+      >
+        {/* Outer Dial */}
+        <circle cx="50" cy="50" r="45" fill="#f3f4f6" stroke="#1f2937" strokeWidth="3" />
+
+        {/* Cardinal Direction Labels */}
+        <text x="50" y="20" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#1f2937">N</text>
+        <text x="83" y="54" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#1f2937">E</text>
+        <text x="50" y="88" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#1f2937">S</text>
+        <text x="17" y="54" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#1f2937">W</text>
+
+        {/* Compass Needle */}
+        <polygon points="50,15 56,50 44,50" fill="#ef4444" /> {/* North (Red) */}
+        <polygon points="50,85 56,50 44,50" fill="#9ca3af" /> {/* South (Grey) */}
+        <circle cx="50" cy="50" r="3" fill="#1f2937" />
+      </svg>
+    </div>
+  );
+};
 
 const helpText99 = `
       ## To my dearest love. I made this for you. Please text me when you see it.
@@ -447,7 +464,7 @@ const helpText99 = `
       #### It's a demonstration of how buying a domain name in a particular format can be the same as buying a property in the metaverse.
 
       People love buying domain names and trying to do interesting things with them. I won't pretend to know the
-      thousands of interesting things that people will think of but I know there's more to it than stock quotes, sports, weather and porn.
+      thousands of interesting things (or even one) that people will think of but I know there's more to it than stock quotes, sports, weather and porn.
 
       As we know, the rush to do this stuff in 3d hasn't happened hard but here's a demo of a way how it could happen. A bird in the hand.
 
@@ -507,7 +524,7 @@ const helpTextOld = `
       Shift reload this page to get the latest version.
       `
 
-      // Y'all gotta let me own a little someting here and there. 
+// Y'all gotta let me own a little someting here and there. 
 
 // Copyright 2026 Alan Tracey Wootton
 // See LICENSE

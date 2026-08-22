@@ -1,6 +1,6 @@
-import * as oct from '../../knotfree-ts-lib/3d/DomainNameOctTree'
+import * as oct from '../../knotfree-ts-lib/3d/Dns8Tree'
 
-import { ReserveVrFunctions } from '../../knotfree-ts-lib/3d/ReserveVrFunction'
+import { ReserveVrFunctions } from '../../../broken-things/ReserveVrFunction'
 
 // before you start this script, in a command line terminal, you must set the PRIVATE_KNOTFREE_PASSPHRASE and BIG_KNOTFREE_TOKEN environment variables.
 // usually like this:

@@ -60,8 +60,6 @@ sub.subscribe("GlbCreatedMessage", (message: messageTypes.GlbMessage, err: Error
 
 sub.publsh ! none yet
 
-
-
 If you are reading this from inside the metaverse-proto-one project ou probably think that's where it 
 runs. But, it's just a library.
 If you are reading it from inside testmain you think that'a where it runs. Close. Aftet all that's why we keep the service running at localhost:3010 and why we tunnel to it. Still wrong. 

@@ -8,6 +8,7 @@ yarn build
 
 # done by knotoperator/apply_namespace.go  sync -a ./build/ ../knotfreeiot/docs/   
 
-# this would be better but it is not working but I'm not giving up.
+# this would be better but it is not working - but I'm not giving up.
 aws s3 cp ./build s3://gotoherestatic/gotohere.com/ --recursive
+
 
