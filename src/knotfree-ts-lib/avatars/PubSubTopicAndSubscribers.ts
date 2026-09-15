@@ -1,11 +1,11 @@
-import { MasterToFriviousName } from "../avatars/testServermap";
+import { MasterToNickname } from "../avatars/testServermap";
 import * as messes from "../3d/messageTypes";
-import { MessageBaseClass, tracebridgemesses } from "../3d/messageTypes";
-import { handlePaleMessages } from "./PubSubBridge";
-
+import { tracebridgemesses } from "../3d/messageTypes";
+import { AnythingToDomainName } from "../avatars/testServermap";
 
 // Because of symmetry and code overlap I'm afraid we're going discontinue the island (bridge)
-// version of this code and fold that into here. See the comments at the top of PubSubBridge though.
+// version of this code and folding that into here. See the comments at the top of PubSubBridge though.
+// some is misguided but I'm liking the mainland/island thing. 
 
 // This is a pub/sub system for components to subscribe to changes, messages and replies.
 // It is meant to work across the mainland/island boundary, handling messages between different contexts transparently.
@@ -21,49 +21,52 @@ type LocalMapItem = {
     // So the key would be the name of the component, or some unique identifier for the component instance.
     // are we using the error?
     // the collector has a name and a function to call
-    callbackList: Map<string, CallbackInfo>
+    callbackList: Record<string, CallbackInfo>
 }
 
 export class PubSubTopicAndSubscribers {
 
     onAnIsland: boolean; // are WE on an island right now? 
 
-    namesMap = new Map<string, LocalMapItem>()
+    namesMap: Record<string, LocalMapItem> = {}
 
     // we will get each of our iFrames to register with us and then we can send them messages.
     // The names don't matter but must be unique.
-    contentWindows = new Map<string, Window>()
+    contentWindows: Record<string, Window>
 
-    debugname: string = "frivolous "
+    debugname: string = "nickname "
 
-    ourCleanMasterDomainName: string = "sssssdddd" // where could get this from? I'm suck it from the 
+    ourCleanMasterDomainName: string = "" // where could we get this from? We get it from any url.new 
 
     constructor(theRealDomainName: string, debugname: string) {
 
-        this.ourCleanMasterDomainName = theRealDomainName;
-        this.debugname = debugname || "frivolous "
-        this.namesMap = new Map<string, LocalMapItem>()
-        this.contentWindows = new Map<string, Window>()
+        this.ourCleanMasterDomainName = theRealDomainName; // could be mainpubsub or else an actual domain name.
+        this.debugname = debugname || "nickname "
+        this.namesMap = {}
+        this.contentWindows = {}
         if (window.self !== window.top) { // pretty cool.
             this.onAnIsland = true;
         } else {
             this.onAnIsland = false;
         }
         window.addEventListener("message", this.ourWindowEventListenerHandler, false); // below
+
     }
 
-    getOurCleanMasterDomainName(): string {
+    getOurCleanMasterDomainName(): string { // eg testmain-2n0u4w2p for an island. What is it for the mainland?
         return this.ourCleanMasterDomainName
     }
 
-    addContentWindow(name: string, contentWindow: Window) {
+    // this is a map from clean cube address eg "testmain-2n0u4w2p" to the corresponding contentWindow on the island we can publish to.
+    addContentWindow(name: string, islandcontentWindow: Window) {
         // console.log("PubSubTopicAndSubscribers: registered contentWindow for : ", name, " contentWindow: ", contentWindow)
-        this.contentWindows.set(name, contentWindow)
+        this.contentWindows[name] = islandcontentWindow
     }
 
+    // remove a contentWindow from the map when it is no longer needed. used?
     removeContentWindow(name: string) {
         console.log("PubSubTopicAndSubscribers: removed contentWindow for : ", name)
-        this.contentWindows.delete(name)
+        delete this.contentWindows[name]
     }
 
     // we're setting these here. and we have a map, but what about in the wild? When there's no AppShitter?
@@ -72,7 +75,7 @@ export class PubSubTopicAndSubscribers {
         return this.debugname
     }
 
-    // from name to localMapItem
+    // from name to localMapItem - the core mapping.
     // every key, like 'DemoPropertiesChanges' will have a list of callbacks.
     // so "App" might have a callback for "DemoPropertiesChanges", and "OrbitPropertyDialog2" might also have a callback for "DemoPropertiesChanges". 
     // When we publish "DemoPropertiesChanges", we want to call all the callbacks that are subscribed to that name.
@@ -80,20 +83,30 @@ export class PubSubTopicAndSubscribers {
 
     getMapItem(name: string): LocalMapItem | undefined {
         if (name.length > 0) {
-            return this.namesMap.get(name)
+            return this.namesMap[name]
         } else {
             return undefined
         }
     }
 
+    // for debugging.
+    doesItemExist(name: string): number {
+        const item = this.getMapItem(name)
+        return item ? Object.keys(item.callbackList).length : 0
+    }
+
     // they have to be named so we can remove them when the component unmounts.
 
-    // Note: we don't remember old values or supply them to new subscribers. 
-    // We just call the callbacks when we publish.
-    subscribe(key: string, who: string, cb: (status: any, err: Error, info?: string) => any, info?: string) {
+    // subscribe will subscribe the callback to the 'channel' or key or name, etc. A publish to that 'channel' will trigger all callbacks subscribed to it.
+    // The who so that in a many-to-one relationship, we can identify which subscriber is which.
+    // one subscriber can unsubscribe and many can receive published messages. 
+    // try to avoid this feature unless you're really doing a 'broadcast' style communication. aka one to many.
+    // The cameFromPostMessage should always be false.
+
+    subscribe(channel: string, who: string, cameFromPostMessage: boolean, cb: (status: any, err: Error, info?: string) => any, info?: string) {
 
         if (this.debugname === "courtyard") {
-            console.log("PubSubTopicAndSubscribers: subscribe: key: ", key, " who: ", who, " this.debugname: ", this.debugname)
+            console.log("PubSubTopicAndSubscribers: subscribe: key: ", channel, " who: ", who, " this.debugname: ", this.debugname)
         }
 
         const tmp: CallbackInfo = {
@@ -101,42 +114,57 @@ export class PubSubTopicAndSubscribers {
             info: info || ""
         }
 
-        let found: LocalMapItem | undefined = this.getMapItem(key)
+        const found: LocalMapItem | undefined = this.getMapItem(channel)
         if (found === undefined) {
-            let found: LocalMapItem = {
-                callbackList: new Map<string, CallbackInfo>(),
+            const newFound: LocalMapItem = {
+                callbackList: {} as Record<string, CallbackInfo>,
             }
-            found.callbackList.set(who, tmp)
-            this.namesMap.set(key, found)
-
+            newFound.callbackList[who] = tmp
+            this.namesMap[channel] = newFound
         } else {
             // replace or add the callback
-            found.callbackList.set(who, tmp)
+            found.callbackList[who] = tmp
         }
-        // no, why, to who? return found
+
+        // we did the local subscription setup.
+        // now,
+
+        if (cameFromPostMessage) {
+            return
+        }
+        // else, since the is a local sub request, we need to notify the other side that there is a subscription.
+
+        // But notify the other side only if that's necessary.
         // let's say we're on the island.
         if (this.onAnIsland) {
-            // We don't know what's up at the mainland. Let's send them a message so they know to forward
-            // messages on this channel to us here.
 
-            // also send a message to make a subscribe over on the mainland.
-            // we can just do it right here? This is weird. The true cb's has been saved here unless somebody deletes them
-            // and doesn't tell us.
+            // somebody on an island is doing a subscription.
+            // A publish from the mainland needs to be forwarded to the island but let's not worry about the other islands for now.
+
+            // We have to tell the mainland that any publish has to be forwarded to the island.
+            // send a message to the mainland to inform them of the subscription.
+
+            // so, we send this to the mainland to inform them of the subscription.
             const submsg: messes.MessageSubscribeClass = {
-                to: "mainland", // the mainland
-                from: "island_" + this.debugname,
-                key: key, // channel name
+                to: channel,
+                from: this.getOurCleanMasterDomainName(),
+                key: channel, // channel name
                 who: who,
-                cmd: "execute_theSubscribe_from_island",
+                cmd: "TellMainlandAboutIslandSubscription",
+                //  cmd: "execute_theSubscribe_from_island",
                 magic: messes.magicMessageNumber,
             }
-            tracebridgemesses('PubSubBridge execute_theSubscribe send to window.parent.postMessage', submsg)
+
+
+            tracebridgemesses('Island has subscription to spread to mainland.', submsg)
             // We HAVE a parent because we are on the island. We are in an iFrame. 
             // We are not on the mainland. 
             window.parent.postMessage(submsg, '*');
             // watch for it coming out at the mainland. It will be handled by the handleTanMessages listener on the mainland.
 
         } else if (!this.onAnIsland) { // on the mainland
+
+            return
 
             // TODO: have an option for an isLand to subscribe for just themselves, not all islands..
             // This could actually be a thing. the RPC temporaryChannel really only needs replies from the specific island that initiated it.
@@ -149,9 +177,10 @@ export class PubSubTopicAndSubscribers {
             // we can just do it right here? This is weird. The true cb's has been saved here unless somebody deletes them
             // and doesn't tell us.
             const submsg: messes.MessageSubscribeClass = {
+
                 to: "IslandsAll", // the which is not a thing
                 from: "mainland_????" + this.debugname,
-                key: key, // channel name
+                key: channel, // channel name
                 who: who,
                 cmd: "execute_theSubscribe_from_island",
                 magic: messes.magicMessageNumber,
@@ -160,55 +189,80 @@ export class PubSubTopicAndSubscribers {
             // We HAVE no parent because we are on the mainland. 
             // We are ON the mainland. 
 
-            // we do have a lost of contentWindows. Right?
-            // We should iterate over them and send the message to each iframe.
-            const iframes = document.getElementsByTagName('iframe');
-            for (const iframe of iframes) {
-                if (iframe.contentWindow) {
-                    iframe.contentWindow.postMessage(submsg, '*');
-                }
-            }
+            // we do have a lost of contentWindows. Right?  this.contentWindows
+            // We should iterate over them and send the message to each iframe. Who had that? 
+            const namedWindows = this.contentWindows
+
+
+            // for (const cwindow of namedWindows.values()) {
+            //     cwindow.postMessage(submsg, '*');
+            // }
+
+
+
+
             // That's pretty slick. Do we think it will fly?
             // I would advise all isLands to repeat their subscriptions. It's not that expensive. 
             // publish is much more expensive.
 
-        } else {
+        } else { // we never come here anymore.
             // Let's say we're on the ...where?.... Do we tell ALL the islands to subscribe to this key? 
             // Or just the one that requested it? The one that just requested it just did that work.
             // how can we posssibly reach all the other islands to tell them to subscribe?
-            console.log('mainland has a subscribe', key, who, this.debugname, "do we try to notify ALL the islands?")
+            console.log('mainland has a subscribe', channel, who, this.debugname, "do we try to notify ALL the islands?")
         }
     }
 
+    // publish(key: string, status: any, err: Error = new Error(""), needsThreadSafety: boolean = false) {
+    // }
+
+
     // all the who's get a callback.
-    publish(key: string, status: any, err: Error = new Error("")) {
+    publish(key: string, status: any, err: Error = new Error(""), needsThreadSafety: boolean = false) {
+
+        console.log('PubSubTopicAndSubscribers publish called with key', key)
 
         const found = this.getMapItem(key)
         if (found !== undefined) {
             // iterate the callback list and call each one.
-            for (const [callbackKey, callbackInfo] of found.callbackList) {
+            for (const [callbackKey, callbackInfo] of Object.entries(found.callbackList)) {
                 if (callbackInfo !== undefined) {
                     // console.log('pubsub publish', callbackKey, status)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    -';
                     // call them anonymously so they can't mess with each other.
-                    setTimeout(() => {
+                    if (needsThreadSafety) {
+                        setTimeout(() => { // I hate this part, can't trace.  
+                            try {
+                                // we could log or filter the info here if we wanted to.
+
+                                if (key == "testmain-2n0u4w2p-island-centre") {
+                                    console.log('Publishing to orange testmain-2n0u4w2p-island-centre with status', status)
+                                    // im expecting to hit the bridge now.
+                                }
+                                callbackInfo.callback(status, err)
+                            } catch (e) {
+                                console.error('Error in pubsub callback for key', callbackKey, 'with status', status, 'and error', err, ': ', e)
+                            }
+                        }, 0) // straight to the input queue.
+                    } else {
                         try {
-                            // we could log or filter the info here if we wanted to.
+                            if (key == "testmain-2n0u4w2p-island-centre") {
+                                console.log('Publishing to orange testmain-2n0u4w2p-island-centre with status', status)
+                                // im expecting to hit the bridge now.
+                            }
                             callbackInfo.callback(status, err)
                         } catch (e) {
                             console.error('Error in pubsub callback for key', callbackKey, 'with status', status, 'and error', err, ': ', e)
                         }
-                    }, 0) // straight to the input queue.
-                    // c
-                    //cb(status, err)
+                    }
                 } else {
                     // this is weird and shouldn't happen.
                     console.log('pubsub publish callback is undefined', callbackKey)
                 }
             }
-            // also tell the bridge? 
+            // also tell the bridge? , no. 
         } else {
             // not really a problem if there are no subscribers, but maybe we want to know about it for debugging.
-            console.log('PubSub didnt find key', key, "in", this.debugname, ":", MasterToFriviousName(key))
+            console.log('PubSub didnt find key', key, "in", this.debugname, ":", MasterToNickname(key))
             // do we check for a bridge now? How does THAT work. 
         }
         // no, the 'bridge' has a subscription where the 'publish' when evoked will automatically send the message across the bridge. 
@@ -221,9 +275,9 @@ export class PubSubTopicAndSubscribers {
         const found = this.getMapItem(key)
         if (found !== undefined) {
             // console.log('pubsub unsubscribe', key, myAppName)
-            found.callbackList.delete(myAppName)
-            if (found.callbackList.size === 0) {
-                this.namesMap.delete(key)
+            delete found.callbackList[myAppName]
+            if (Object.keys(found.callbackList).length === 0) {
+                delete this.namesMap[key]
                 // and, it's gone and forgotton.
             }
             if (this.onAnIsland) {
@@ -244,12 +298,9 @@ export class PubSubTopicAndSubscribers {
                 if (!this.onAnIsland) {
                     // we do have a list of contentWindows. Right?
                     // We should iterate over them and send the message to each iframe.
-                    const iframes = document.getElementsByTagName('iframe');
-                    for (const iframe of iframes) {
-                        if (iframe.contentWindow) {
-                            const ourmsg = { ...submsg };
-                            iframe.contentWindow.postMessage(ourmsg, '*');
-                        }
+                    for (const cwindow of Object.values(this.contentWindows)) {
+                        const ourmsg = { ...submsg };
+                        cwindow.postMessage(ourmsg, '*');
                     }
                 }
                 if (this.onAnIsland) {
@@ -303,15 +354,14 @@ export class PubSubTopicAndSubscribers {
         //     sunscribeName
         //         callback 
 
-        for (const key of this.namesMap.keys()) {
+        for (const key of Object.keys(this.namesMap)) {
             const item: LocalMapItem | undefined = this.getMapItem(key)
             if (item === undefined) {
                 dump.push(indent + "" + key + " is undefined")
                 continue
             } else {
                 // we have the whole item.
-                const localMapItem = item as LocalMapItem
-                for (const [itemName, callbackInfo] of localMapItem.callbackList) {
+                for (const [itemName, callbackInfo] of Object.entries(item.callbackList)) {
                     // console.log("dumpPubSubState ", this.debugname, " key: ", key, " itemName: ", itemName, " callback: ", callbackInfo.callback)
                     //let theCallback = callbackInfo.callback
                     // it's the text of the whole callback if you don't watch out
@@ -341,16 +391,16 @@ export class PubSubTopicAndSubscribers {
             console.log("have mainland dump: \n", this.debugname, dump.join("\n"))
         }
 
-        for (const [name, contentWindow] of this.contentWindows) {
-            dump.push(indent + "contentWindow name: " + name)
+        for (const [name, islandcontentWindow] of Object.entries(this.contentWindows)) {
+            dump.push(indent + "islandcontentWindow name: " + name)
 
             const DumpRequest: messes.MessageBaseClass = {
-                to: name + ":" + MasterToFriviousName(name) + "-contentWindow",
+                to: name + ":" + MasterToNickname(name) + "-contentWindow",
                 from: "pubsub-" + this.debugname,
                 cmd: "DumpStateRequest",
                 magic: messes.magicMessageNumber
             }
-            contentWindow.postMessage(DumpRequest, "*");
+            islandcontentWindow.postMessage(DumpRequest, "*");
         }
         // sit around and wait for them to come back. 
         // we sent them out.  call the callback, not this.
@@ -413,115 +463,119 @@ export class PubSubTopicAndSubscribers {
             return;
         }
 
+        if (msg.cmd === "TellMainlandAboutIslandSubscription") {
+            const submessage = msg as messes.MessageSubscribeClass;
+
+            if (submessage.key.includes("2n0u4w2p")) {
+                console.log("Orange has a subscription arriving on the mainland", submessage.key);
+            }
+
+            const domainName = submessage.from // set in the original subscription message
+
+            // We need to inform the mainland about this subscription.
+            // Which is probably a command channel for an island-centre
+            // but we also need to set it up so that a publish goes from the mainland back to the island.
+            // we know the domain name.
+            const subscriptionIsFromPost = true
+            this.subscribe(submessage.key, "", subscriptionIsFromPost, (cbstatus: any, cberr: Error, info?: string) => {
+
+                // we know which island sent this original subscription
+                // That's the island that is getting this publish notification 
+
+                // subscription came from this island: 
+                const islandName = domainName;
+
+                console.log("Subscription came from THIS island:", islandName)
+
+                const islandcontentWindow = this.contentWindows[domainName]
+
+                if (islandcontentWindow) {
+                    let reply: messes.MessagePublishClass = {
+                        to: submessage.key,
+                        from: "PubSubTopicAndSubscribers",
+                        cmd: "MainlandPubToIsland",
+                        magic: messes.magicMessageNumber,
+
+                        key: submessage.key,
+                        who: submessage.who,
+                        status: cbstatus,
+                        err: cberr,
+                    };
+                    islandcontentWindow.postMessage(reply, "*") // this is supposed to work.
+                }
+            })
+        }
+
+        if (msg.cmd === "MainlandPubToIsland") {
+
+            const pubmessage = msg as messes.MessagePublishClass;
+
+            if (pubmessage.key.includes("2n0u4w2p")) {
+                console.log("Orange has a publish arriving on the island", pubmessage.key, pubmessage.status);
+            }
+            // As subscription on the mainland was formed as a result of an island subscription,
+            // for instance, and an island-centre address.
+            // a publish has landed on the mainland and then moved acrross the bridge to this island.
+            // Right here.
+            // so let's turn it in so that the lacky can process the message
+            // and that's it.
+            this.publish(pubmessage.key, pubmessage.status, pubmessage.err);
+        }
+
+
         // we're not doing replies right now.  We just want to see the state of the pubsub.
         // if (msg.cmd === "DumpStateReply") {
         //     this.haveIncomingDumpState(msg as messes.MessageDumpReplyClass)
         //     return;
         // }
 
-        if (msg.cmd === "execute_theSubscribe_from_mainland") {
-            console.log("execute_theSubscribe_from_mainland received: ", msg);
-            // One presumes we're on an island.
-            if (!this.onAnIsland) {
-                console.warn("execute_theSubscribe_from_mainland received but we are not on an island.",
-                    this.debugname, this.getOurCleanMasterDomainName);
-            }
-            // this is what the msg is:
-            // we send it to the island      --       I'm not sure we need ALL this stuff. 
-            //   const submsg: messes.MessageSubscribeClass = {
-            //     to: domain name of the island here, // the mainland
-            //     from: "mainland_" + this.debugname,
-            //     key: key, // channel name
-            //     who: who,
-            //     cmd: "execute_theSubscribe",
-            //     magic: messes.magicMessageNumber,
-            // }
-            // const 
+        // if (msg.cmd === "execute_theSubscribe_from_mainland") {
+        //     return
+        //     console.log("execute_theSubscribe_from_mainland received: ", msg);
+        //     // One presumes we're on an island.
+        //     if (!this.onAnIsland) {
+        //         console.warn("execute_theSubscribe_from_mainland received but we are not on an island.",
+        //             this.debugname, this.getOurCleanMasterDomainName);
+        //     }
+        //     const submsg = msg as messes.MessageSubscribeClass;
+        //     // now, over here on the island when a publish happens 
+        //     this.subscribe(submsg.key, submsg.who, true, (status: any, err: Error, info?: string) => {
+        //         if (err) {
+        //             this.publish(submsg.key, { status: "error", error: err.message });
+        //             console.error("Subscription error: ", err);
+        //         } else {
+        //             this.publish(submsg.key, { status: "success", info: info });
+        //             console.log("Subscription status: ", status, "Info: ", info);
+        //         }
 
-            const submsg = msg as messes.MessageSubscribeClass;
+        //     }, "cb does publish to local channel")
+        //     return;
+        // }
 
-            // now, over here on the island when a publish happens 
-            this.subscribe(submsg.key, submsg.who, (status: any, err: Error, info?: string) => {
+        // if (msg.cmd === "execute_theSubscribe_from_island") {
+        //     return
+        //     console.log("execute_theSubscribe_from_island received: ", msg);
+        //     const submsg = msg as messes.MessageSubscribeClass;
+        //     this.subscribe(submsg.key, submsg.who, true, (status: any, err: Error, info?: string) => {
+        //         if (err) {
+        //             this.publish(submsg.key, { status: "error", error: err.message });
+        //             console.error("Subscription error: ", err);
+        //         } else {
+        //             this.publish(submsg.key, { status: "success", info: info });
+        //             console.log("Subscription status: ", status, "Info: ", info);
+        //         }
 
-                if (err) {
-                    this.publish(submsg.key, { status: "error", error: err.message });
-                    console.error("Subscription error: ", err);
-                } else {
-                    this.publish(submsg.key, { status: "success", info: info });
-                    console.log("Subscription status: ", status, "Info: ", info);
-                }
-
-            }, "cb does publish to local channel")
-
-            return;
-        }
-
-        if (msg.cmd === "execute_theSubscribe_from_island") {
-            console.log("execute_theSubscribe_from_island received: ", msg);
-            // One presumes we're on the mainland.
-            // this is what the msg is:
-            // we send it to the island 
-            //   const submsg: messes.MessageSubscribeClass = {
-            //     to: "mainland", // the mainland
-            //     from: "island_" + this.debugname,
-            //     key: key, // channel name
-            //     who: who,
-            //     cmd: "execute_theSubscribe",
-            //     magic: messes.magicMessageNumber,
-            // }
-            // const 
-
-            const submsg = msg as messes.MessageSubscribeClass;
-
-            this.subscribe(submsg.key, submsg.who, (status: any, err: Error, info?: string) => {
-
-                if (err) {
-                    this.publish(submsg.key, { status: "error", error: err.message });
-                    console.error("Subscription error: ", err);
-                } else {
-                    this.publish(submsg.key, { status: "success", info: info });
-                    console.log("Subscription status: ", status, "Info: ", info);
-                }
-
-            }, "cb does publish to local channel")
-
-            return;
-        }
+        //     }, "cb does publish to local channel")
+        //     return;
+        // }
 
         if (msg.cmd === "execute_UnSubscribe_everywhere") {
             console.log("execute_UnSubscribe_everywhere received: ", msg);
-
             const submsg = msg as messes.MessageSubscribeClass;
-
             this.unsubscribe(submsg.key, submsg.who)
         }
-
-        this.morecommands(msg, event);
     }
 
-    morecommands(msg: MessageBaseClass, event: MessageEvent) {
-        // is that it? There's only supposed to be a finite number of these bridge commands to handle.
-    }
-}
-
-// To see where a window.onmessage event came from, check event.source. 
-// Compare event.source to window.parent for a parent frame, 
-// or check window.frames and event.source === frameWindow for an iframe. 
-// Always verify event.origin to make sure the sender is trusted.
-// Check the Source PropertyUse event.source to see the exact window object that sent the message.
-// Compare event.source to window.parent to see if it came from the parent window.
-// Loop through window.frames or check specific iframe content window references to see if it came from a child iframe.
-
-// not out here.
-async function XXXasyncSpamAllTheIslands() {
-    // I have no idea. I'm just going to wait 5 sec and see what comes back.
-    const DumpRequest: messes.MessageBaseClass = {
-        to: "all",
-        from: "PubSubTopicAndSubscribers",
-        cmd: "DumpState",
-        magic: messes.magicMessageNumber
-    }
-    //   window.contentWindow.postMessage(DumpRequest, "*");
 }
 
 // Copyright 2026 Alan Tracey Wootton

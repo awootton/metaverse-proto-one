@@ -303,7 +303,7 @@ export function MakeAuxGroupsFromShowingLeaves(props: MainWorldDisplayProps) {
                 justTheWorld: oct.worldFromCubeName(batchInfo.masterName),
                 leaves: leaftmpList,
                 txtParams: batchInfo.groupInfo,
-                glbItems: new Map<string, oct.GlbStatus>()
+              // glbItems: new Map<string, oct.GlbStatus>()
             }
             let oldeTxtJunkDirty = false
             const group = batchInfo.groupInfo

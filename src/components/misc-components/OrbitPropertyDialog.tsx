@@ -108,7 +108,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
 
     React.useEffect(() => {
 
-        mainpubsub.subscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId,
+        mainpubsub.subscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId, false,
             (leaves: oct.TreeStatus[]) => {
                 //  too long to log: 
                 console.log("OrbitalPropertyDialog got showingLeaves ", leaves.length)
@@ -126,7 +126,7 @@ export const OrbitPropertyDialog: FC<Props> = (props: Props): React.ReactElement
                 console.log("OrbitalPropertyDialog got leaves.", leaves.length)
                 // NO WE'RE discontinuing this whole component           setShowingLeaves(leaves)
                 // }
-            },"TODO: delete this whole antique component")
+            }, "TODO: delete this whole antique component")
 
         return () => {
             mainpubsub.unsubscribe("ShowingLeavesChanges", "OrbitalDialog" + uniqueId)

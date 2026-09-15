@@ -44,10 +44,10 @@ export type MessageBaseClass = {
 }
 
 // the same as a publish message.
-export type MessagePublishClass<T> = MessageBaseClass &  {
+export type MessagePublishClass = MessageBaseClass &  {
     key: string;// topic name
     who: string;
-    status: T;  
+    status: any;  
     err: Error;  
 }
 
@@ -126,6 +126,3 @@ export interface argType {
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-// "mqtt": "^5.15.2",

@@ -6,7 +6,7 @@ import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import AtwBox from "./../OriginAxisDisplay";
 import { CameraWalker } from "./CameraWalker";
-import { useTexture, useGLTF } from "@react-three/drei";
+import { useTexture, useGLTF, OrbitControls } from "@react-three/drei";
 import * as oct from "../../knotfree-ts-lib/3d/Dns8Tree"
 
 import { Text } from '@react-three/drei';
@@ -61,9 +61,8 @@ export function DrawDogComponent(props: { cube: oct.Cube }) {
 
 //      <Text position={[0, 0, 2.5]} fontSize={.5} color="red">E</Text>
 
-
-// unused 
-export function Shiba() {
+ 
+export function ShibaCanvas() {
 
   // const cubeTexture = useCubeTexture([
   //   'stars.jpeg', 'stars.jpeg', // Positive and negative X faces
@@ -76,11 +75,14 @@ export function Shiba() {
   // const ppp = "/starmaps/stars.jpeg"
 
   // const texture = useLoader(TextureLoader, ppp) //textureImage)
+//className='h-2xl w-2xl'
+
+    // <div className='flex justify-center items-center h-screen'>
+
 
   return (
-    <div className='flex justify-center items-center h-screen'>
 
-      <Canvas className='h-2xl w-2xl'
+      <Canvas 
         camera={{ position: [0, 1.75, 4] }}>
 
         {/* <ambientLight /> */}
@@ -93,27 +95,31 @@ export function Shiba() {
           intensity={Math.PI * 1.0}
         />
 
+        <OrbitControls />
+
         {/* <pointLight position={[10, 10, 10]} />   castShadow     */}
 
         {/* <Environment map={texture} /> doesn't work */}
 
         {/* <Perf /> */}
 
-        <CameraWalker />
+        {/* <CameraWalker /> */}
 
         {/* <Grid size={10} /> */}
 
         <AtwBox />
 
         {/* One Meter Cube */}
-        <DrawDogComponent cube={{ x: 0, y: 3, z: 0, p: 0, world: "testmain" }} />
+        {/* <DrawDogComponent cube={{ x: 0, y: 0, z: 0, p: 0, world: "testmain" }} /> */}
 
 
       </Canvas>
 
-    </div>
+  
   );
 }
+
+//   </div>
 
         // <Stats showPanel={0} />
 

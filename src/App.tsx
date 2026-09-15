@@ -143,7 +143,7 @@ export default function App() {
   React.useEffect(() => {
 
     // It's just the names. We try to keep them sorted.
-    mainpubsub.subscribe("ShowingLeavesChanges", "App",
+    mainpubsub.subscribe("ShowingLeavesChanges", "App",false,
       (leaves: string[]) => {
 
         // trigger a re-render of the AppCanvas with the new leaves.
@@ -197,7 +197,7 @@ export default function App() {
   }
 
   React.useEffect(() => { // loading message.
-    mainpubsub.subscribe("LoadingMessage", "App",
+    mainpubsub.subscribe("LoadingMessage", "App", false,
       (message: string) => {
         setLoadingMessage(message)
       },"Just changes the 'loading' message.")
@@ -302,19 +302,23 @@ export default function App() {
 
       <MiscInputDialog
         open={miscDialog}
-        onClose={() => { setMiscDialog(false) }}
-        title="Explore some options."
-        body="When there's other worlds besides just 'testmain' put the name here.
-        Of course it's broken, so nevermind. I'll get there.
-         Follow my progress online. @alan-t-wootton. I'm working on it. 
-         Volunteers? 
-         "
+        onClose={() => { 
+          setMiscDialog(false) 
+
+          setMiscDialog(true)
+        }}
+        title="Tests and experiments."
+        body="@alan-t-wootton. I'm working on it. "
         onConfirm={(str) => {
           console.log("Confirmed with input: ", str)
           setMiscDialog(false)
           if (str.length >= 8) {
             setWorldName(str)
           }
+
+          setMiscDialog(true)
+
+
         }}
         label="Enter a world name"
         default={worldName}

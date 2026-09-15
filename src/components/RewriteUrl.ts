@@ -16,7 +16,7 @@ import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 // for a iFrame we need something like "http://localhost:3010/testmain-0n0u0e5p.vr" which is weird but it's how the local copy of WorldsTest1 knows which world it's serving.
 // and I AM using the same code to serve several spaces.
 
-// atw: actually: "http://localhost:3010/domain=testmain-0n0u0e5p.vr" but we don't do that either.
+// atw: actually: "http://localhost:3010/domain=testmain-0n0u0e5p.vr" but we don't do that either except for sometimes.
 
 // if it's a .vr url and we're not local and the IP address is to knotfree.net (secure) or knotfree.io (insecure) 
 // unless we're somehow using the dns.gotohere.com resolver (and we're not) then we have to make it a subdomain request.

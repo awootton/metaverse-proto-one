@@ -15,7 +15,9 @@
 export type ServerItem = {
     "name": string,
     "master": string,
-    "port": string
+    "port": string,
+    // unnecessary for now
+    // "runLocalHost": boolean // will be running on localhost:3010://server=master
 }
 
 export type ServerList = {
@@ -27,32 +29,38 @@ export const OurServerList = {
         {
             "name": "courtyard",
             "master": "testmain-0n0u0e5p.zzz",
-            "port": "4001"
+            "port": "4001",
+            // "runLocalHost": false
         },
         {
             "name": "orange",
             "master": "testmain-2n0u4w2p.zzz",
-            "port": "4002"
+            "port": "4002",
+            // "runLocalHost": true
         },      
         {
             "name": "duck",
             "master": "testmain-2n0u5w2p.zzz",
-            "port": "4003"
+            "port": "4003",
+             // "runLocalHost": false
         },
         {
             "name": "SevenWest",
             "master": "testmain-2n0u7w2p.zzz",
-            "port": "4004"
+            "port": "4004",
+            // "runLocalHost": false
         },
         {
             "name": "TheStreet",
             "master": "testmain-1n0u10w4p.zzz",
-            "port": "4005"
+            "port": "4005",
+            // "runLocalHost": false
         },
         {
             "name": "dirt",
             "master": "testmain-0n1d0e9p.zzz",
-            "port": "4006"
+            "port": "4006",
+            // "runLocalHost": false
         }
     ]
 }
@@ -100,8 +108,8 @@ export function AnythingToDomainName(href: string): [string, Error | null] {
 }
 
 // eg master is from the aux.wholeMaster, like "testmain-0n0u0e5p.vr" or "testmain-0n0u0e5p.xyz"
-// or even testmain-0n0u0e5p-command etc. or other forms we don't know.
-export function MasterToFriviousName(master: string): string {
+// or even testmain-0n0u0e5p-command etc. or other forms we don't know. was MasterToFriviousName
+export function MasterToNickname(master: string): string {
     for (const [name, info] of Object.entries(OurServerList.servers)) {
         const item = info as ServerItem
         // we want the coordinate part (only) to match somewhere. eg "testmain-0n0u0e5p.zzz"
@@ -121,7 +129,7 @@ export function MasterToFriviousName(master: string): string {
 // testmain-2n0u5w2p duck  // which one is it?
 // testmain-2n0u7w2p  particle
 // 127.0.0.1 testmain-2n0u5w2p.zzz
-// 127.0.0.1 testmain-2n0u4w2p.zzz // stack
+// 127.0.0.1 testmain-2n0u4w2p.zzz // stack aka orange
 // 127.0.0.1 testmain-0n0u0e5p.zzz
 // fake subdomain technique. 
 // I think I can make it work through s3 for prod or something. subdomain through knotfree.net for prod. not for local.

@@ -64,7 +64,7 @@ export function MainWorldDisplay(props: MainWorldDisplayProps) {
   //props.state.uniqueId, " show demos=", demoSpacesVersion, " onlyShowOutlineBoxes=", props.state.onlyShowOutlineBoxes, " showOriginAxis=", props.state.showOriginAxis)
 
   React.useEffect(() => {
-    mainpubsub.subscribe("DemoPropertiesChanges", "MainWorldDisplay", (status: Object, err: Error) => {
+    mainpubsub.subscribe("DemoPropertiesChanges", "MainWorldDisplay", false,(status: Object, err: Error) => {
 
       // I don't really care about the value I just want to re-trigger a calc of the property spaces.
       const cubes = RetreiveTheDemoCubes()

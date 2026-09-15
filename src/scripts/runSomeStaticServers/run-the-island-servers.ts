@@ -76,10 +76,12 @@ async function startServers() {
         const port = Number(server.port);
         //console.log('Starting server on port', port, 'and path', buildDir);
 
+        //if (!server.runLocalHost) { // don't do them all. 
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
             console.log(`Example URL: http://${server.master}:${port}/index.html`);
         });
+        // }
 
         // async wait for 10 sec for debug
         // await new Promise(resolve => setTimeout(resolve, 10000));
@@ -98,3 +100,19 @@ console.log('ctrl-C to stop them all');
 // we'll test some kind of prod version later. I can serve two ways. Now. can I serve these from S3.
 // https://testmain-2n0u5w2p.zzz:9001 fails
 // http://testmain-2n0u5w2p.zzz:9001 works
+
+
+// Copyright 2026 Alan Tracey Wootton
+// See LICENSE
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.

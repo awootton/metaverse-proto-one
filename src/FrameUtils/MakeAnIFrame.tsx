@@ -12,7 +12,7 @@ import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
 import * as sub from '../knotfree-ts-lib/avatars/PubSubSimple';
 import { mainpubsub } from '../App';
 import { aux2LocalUrlForIframes } from '../components/RewriteUrl';
-import { MasterToFriviousName } from '../knotfree-ts-lib/avatars/testServermap';
+import { MasterToNickname as MasterToNickname } from '../knotfree-ts-lib/avatars/testServermap';
 
 const skinnyVersion = true;// like 12 pixel wide iFrames.
 // out them at the TOP of the screen.  We can hide them later.
@@ -28,6 +28,10 @@ export type props4RenderOneFrameGroup = {
 // What do we have over here that a AuxGroupRenderer would want except that we're loaded now and can 
 // ask for weapons and status and glb's and stuff.
 export function RenderOneFrameGroup(props: props4RenderOneFrameGroup) {
+
+    // where's the command center for this critter? 
+    // This is supposed to be the mainland-centre.
+
 
     const master = props.aux.wholeMaster;
     const [tmp, err] = oct.StringToCube(master);
@@ -49,19 +53,28 @@ export function RenderOneFrameGroup(props: props4RenderOneFrameGroup) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     // We COULD use this for the initial sunscribe. We'll see.
-    // We really want the iFrame to manage the subscribe.
+    // We really want the iFrame to manage the subscribe. (we don't want to do it here)
     function OnLoad() {
-
-        console.log("OnLoad: iFrame is loaded now: name: ", MasterToFriviousName(master), " master: ", master)
+        // how can this be when the server is not running?? It's making some kind of shim during the preload.
+        // OnLoad: iFrame is loaded now: name:  orange  master:  testmain-2n0u4w2p
+        // console.log("OnLoad: iFrame is loaded now: name: ", MasterToNickname(master), " master: ", master, iframeRef.current)
+        // think they're loaded when theserver says the ports are all closed. 
+        // the rpc stuff is halted but it still think they're up. 
 
         const thing = iframeRef.current;
         if (!thing) {
-            console.warn("RenderOneFrameGroup: OnLoad: no iframeRef.current for master: ", master)
+            console.warn("RenderOneFrameGroup: OnLoad: no iframeRef.current for master: ", master, iframeRef.current)// not happening
             return;
         }
         if (iframeRef.current) {
             if (iframeRef.current.contentWindow) {
-                mainpubsub.addContentWindow(master, iframeRef.current.contentWindow);
+                mainpubsub.addContentWindow(master, iframeRef.current.contentWindow); //?? ?? What does this even mean?
+                thing.addEventListener('load', () => {
+                    console.log('The lazy iframe has successfully loaded!', master); // this works. 
+                    // 2/6 of the time. 5w and 7w and not the rest. 
+                    // Why does http://testmain-2n0u4w2p.zzz:4002 not work? (orange)
+                });
+
             } else {
                 console.warn("RenderOneFrameGroup: OnLoad: no iframeRef.current.contentWindow for master: ", master)
                 return;
@@ -71,73 +84,70 @@ export function RenderOneFrameGroup(props: props4RenderOneFrameGroup) {
             return;
         }
 
-    // who do we expect to have subscribed to this?
-    // lol. nobody. It doesn't matter.
-    // but it makes an annoying log though - sub.publish(aux.wholeMaster + "-loaded", "We are loaded now.")
-}
+        // who do we expect to have subscribed to this? This is NOT the controller of this entity - That's over in the iFrame aks Island.
+        // lol. nobody. It doesn't matter.
+    }
 
-const sourceUrl = aux2LocalUrlForIframes(aux);
+    const sourceUrl = aux2LocalUrlForIframes(aux);
+    //console.log("ListOfIframes: attemptiong an iFrame load: ", sourceUrl, " batchInfo: ", master)
+    const containerStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    };
 
-//console.log("ListOfIframes: attemptiong an iFrame load: ", sourceUrl, " batchInfo: ", master)
+    const containerStyleSkinny = {
+        // display: 'flex',
+        // alignItems: 'center',
+        // justifyContent: 'center',
+        //  minWidth: '12px',
 
-const containerStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-};
+        fontSize: '8px',
+        lineHeight: '6px',
+        maxWidth: '12px',
+        margin: 0,
+        padding: 0,
+        border: 'none',
+        outline: 'none',
+        gap: '2',
+    };
 
-const containerStyleSkinny = {
-    // display: 'flex',
-    // alignItems: 'center',
-    // justifyContent: 'center',
-    //  minWidth: '12px',
+    // we ONLY use the skinny  now.
+    // what would the title be? title={master} master means nothing to the user. It's just a cube name.
 
-    fontSize: '8px',
-    lineHeight: '6px',
-    maxWidth: '12px',
-    margin: 0,
-    padding: 0,
-    border: 'none',
-    outline: 'none',
-    gap: '2',
-};
+    if (skinnyVersion) {
+        return (<>
 
-// we ONLY use the skinny  now.
-// what would the title be? title={master} master means nothing to the user. It's just a cube name.
+            <span className="skinny-top-div" key={master} style={{
+                ...containerStyleSkinny
+            }}>
 
-if (skinnyVersion) {
-    return (<>
+                <iframe key={master}
+                    style={{ padding: "0px", margin: "0px" }}
+                    ref={iframeRef}
+                    src={sourceUrl}
+                    onLoad={OnLoad}
+                    width="12" height="6"
+                    loading="lazy"
+                />
 
-        <span className="skinny-top-div" key={master} style={{
-            ...containerStyleSkinny
-        }}>
-
-            <iframe key={master}
-                style={{ padding: "0px", margin: "0px" }}
-                ref={iframeRef}
-                src={sourceUrl}
-                onLoad={OnLoad}
-                width="12" height="6"
-                loading="lazy"
-            />
-
-        </span >
-    </>
-    );
-} else {
-    return (
-        <div key={master} style={{ margin: "4px", padding: "4px", ...containerStyle }}>
-            <span style={{ padding: "4px" }}>{master}</span>
-            <iframe key={master} style={{ padding: "4px", margin: "4px" }}
-                ref={iframeRef}
-                src={sourceUrl}
-                onLoad={OnLoad}
-                width="32px" height="32px" title={master} loading="lazy"
-            >
-            </iframe>
-        </div>
-    );
-}
+            </span >
+        </>
+        );
+    } else {
+        return (
+            <div key={master} style={{ margin: "4px", padding: "4px", ...containerStyle }}>
+                <span style={{ padding: "4px" }}>{master}</span>
+                <iframe key={master} style={{ padding: "4px", margin: "4px" }}
+                    ref={iframeRef}
+                    src={sourceUrl}
+                    onLoad={OnLoad}
+                    width="32px" height="32px" title={master} loading="lazy"
+                >
+                </iframe>
+            </div>
+        );
+    }
 }
 
 // Copyright 2026 Alan Tracey Wootton

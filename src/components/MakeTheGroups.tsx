@@ -27,7 +27,7 @@ export function MaketheGroups(props: MaketheGroupsProps) {
     // useEffect to subscribe to the pubsub topic "NewGroupKeys" and then render the iFrames for each of them. 
     // This is a sub for the whole batch. No individual items.
     useEffect(() => {
-        const subscription = mainpubsub.subscribe("NewGroupKeys", "MaketheGroups", (groupKeys: string[]) => {
+        const subscription = mainpubsub.subscribe("NewGroupKeys", "MaketheGroups", false,(groupKeys: string[]) => {
 
             // do nothing if the keys are the same and this happens a lot. 
             // We don't want to re-render the iFrames if the keys are the same.

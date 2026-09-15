@@ -2,20 +2,18 @@
 import * as THREE from 'three';
 
 // what does useMemo do?
+
 import React, { useRef, useState, useEffect, SetStateAction } from 'react';
 import * as oct from '../knotfree-ts-lib/3d/Dns8Tree';
-// import * as leaves from './MiscCubeRenderElements';
-import * as sub from '../knotfree-ts-lib/avatars/PubSubSimple';
-import * as bridge from '../knotfree-ts-lib/avatars/PubSubBridge';
-// import * as pubsub from '../knotfree-ts-lib/avatars/PubSubTopicAndSubscribers';
-import * as messes from '../knotfree-ts-lib/3d/messageTypes'
 import * as leaves from './MiscCubeRenderElements'
-import * as utils from '../knotfree-ts-lib/3d/utils';
 
 import { GLTF, GLTFLoader } from 'three-stdlib';
+import { useGLTF } from "@react-three/drei"
 
 import { mainpubsub } from '../App';
-import { MasterToFriviousName } from '../knotfree-ts-lib/avatars/testServermap';
+
+import { Cmd_Lacky, ICommand } from '../knotfree-ts-lib/avatars/Cmd_Lacky';
+import { RPC_Gadget } from '../knotfree-ts-lib/avatars/RPC_Gadget';
 
 
 export type RenderThingsWithAuxGroupProps = {
@@ -23,7 +21,7 @@ export type RenderThingsWithAuxGroupProps = {
     aux: oct.AuxLeafStatus
 }
 
-// The changeover to using these Aux type groups is almost complete.
+// The changeover to using these Aux type groups IS almost complete.
 
 // we need something to subscribe to the aux changes and redraw when they change (we do, it's MakeBoxesForShowingGroups.tsx
 // and it renders THESE! ).
@@ -38,7 +36,6 @@ export function AuxGroupRender(props: RenderThingsWithAuxGroupProps) {
     // it ALWAYS has an aux but we add little surprises to it.
 
     const [loaded, setLoaded] = useState(false);
-    // nope const [tempReturnChannel, setTempReturnChannel] = useState("");
 
     const aux = props.aux
 
@@ -65,69 +62,79 @@ export function AuxGroupRender(props: RenderThingsWithAuxGroupProps) {
         return <>{list}</>
     }
 
-    // what we really want is a RPC-Gadget and the Cmd-Lacky.  
+    // what we really want is a RPC-Gadget and the Cmd_Lacky.  
     // when can I send a "get info" command to the island?
-    // our island channel is masterName + "-commands" NOT  , I don't like it.   island-brain is it 
-    // in the other project it's "masterName_commands"  which is wrong.
 
-    // "island-brain" would be the central hub for managing island state and commands.
-    // on the mainland there woulld be a component exclusivelt dedicated to interacting with the islands-brain.
-    // his name is "" 
+    console.log("AuxGroupRender: masterName is", masterName, "Starting centre and for ", masterName + "-mainland-centre");
 
-    // Hey CP what's a good name for dockside telegraph office. Something clever. play on dicker and telegraph. tele - ?? 
+    const cmdr = new Cmd_Lacky();
+    const rpc = new RPC_Gadget(mainpubsub, masterName, masterName + "-mainland-centre", cmdr);
+
+    // hey cmdr. Where's my commands?
+
+    useEffect(() => {// boiler plate.
+
+        // our actual name is master-mainland-centre
+
+        console.log("AuxGroupRender subscribing to our channel:", rpc.GetOurChannelName());
+
+        // can we override the 'hello' of orange aka 4w?
+        if (masterName == "testmain-2n0u4w2p") {
+
+            { // note sure about this one. 
+                const islandCenterCount = mainpubsub.doesItemExist("testmain-2n0u4w2p-island-centre")
+                console.log("Island center count for testmain-2n0u4w2p-island-centre:", islandCenterCount)
+                if (islandCenterCount === 0) {
+                    console.warn("111 FAIL FAIL FAIL FAIL No subscribers found for testmain-2n0u4w2p-island-centre osioeryhgr");
+                }
+            }
+
+            // after 20 seconds send a "hello" command to the island. hello testmain-2n0u4w2p-island-centre
+            // test a message going to the island-centre, and probably the temp channel also.
+            setTimeout(() => {
+
+                {
+                    const islandCenterCount = mainpubsub.doesItemExist("testmain-2n0u4w2p-island-centre")
+                    console.log("Island center count for testmain-2n0u4w2p-island-centre:", islandCenterCount)
+                    if (islandCenterCount === 0) {
+                        console.warn("222 Major FAIL FAIL FAIL FAIL No subscribers found for testmain-2n0u4w2p-island-centre osioeryhgr222");
+                    }
+                }
+
+                console.log("Sending hello to testmain-2n0u4w2p-island-centre test1");
+
+                mainpubsub.publish("testmain-2n0u4w2p-island-centre", "hello from mainland e5678");
+
+            }, 20000);
 
 
-    // FIXME: RPC and Lacky
+            console.log("AuxGroupRender: masterName matches testmain-2n0u4w2p, can override 'hello' of orange aka 4w");
+            const newHelloCommand: ICommand = {
+                command: "hello",
+                description: "Overridden hello command for testmain-2n0u4w2p",
+                execute: (msg: any, callContext: any) => {
+                    console.log("Overridden 'hello' command executed with msg:", msg);
+                    return "Hello from the orange land! so4wh";
+                }
+            };
+            cmdr.AddCommand(newHelloCommand);
 
-    useEffect(() => {
-        if (!loaded) {
-            return
+
         }
-        const temporaryChannel = masterName + "-" + utils.RandomString(18);
-        mainpubsub.subscribe(temporaryChannel, "temp", (status: any, err: Error) => {
 
-            console.log("ThingWithAux received on temp channel:", masterName, "status:", status, "err:", err)
 
-        }, ".??..??!!??");// did we get a suback? Do we ever? let's move this then. No, we don't know the island will get
-        // the sub and it MUST.
+    }, []); // empty dependency array means this effect runs once on mount and cleans up on unmount is that right?  yes.  see https://react.dev/reference/react/useEffect
 
-        // now see the response up on the temporaryChannel
+    // fix this later
+    // if (masterName !== "testmain-2n0u4w2p") {
+    //     return drawAllAsBoxed()
+    // }
 
-        return () => {
-            console.log("ThingWithAux: unsubscribed  temporaryChannel", temporaryChannel)
-            mainpubsub.unsubscribe(temporaryChannel, "temp")
-        }
-    }, [loaded])
 
-    useEffect(() => {
-
-        sub.subscribe(masterName + "-loaded", (message: messes.MessageBaseClass, err: Error | null) => {
-            // MakeAniFrame makes these pubs.
-            console.log("ThingWithAux received -loaded message for master:", masterName, "message:", message, "name:",  MasterToFriviousName(masterName), "err:", err)
-            
-            setLoaded(true) // we can now load the aux and draw it.
-
-            // It's ready for a CALL to demo of "The RPC sequence". 
-            // does the island have the sub yet? 
-
-            // we need a better name than "-commands" 
-
-            // their command channel  
-            // now send a 'about' command to the masterName + "-commands" channel and get a (text) answer back via the callback.
-
-            const ourSubscribeName = "testmain-2n0u4w2p-about"
-            mainpubsub.publish(ourSubscribeName, "about") // it doesn't matter what you say, there should always be a response.
-            // now see the response up on the temporaryChannel
-        });
-
-        return () => {
-            sub.unsubscribe(masterName + "-loaded")
-        }
-    },[])
-
+    // olde ways turned off dor a while. Trying to blob and ubblob shiva
     // now we can start falling back on old ways.
     // the old color hints
-    if (aux.oldeTxtJunk?.color) {
+    if (aux.oldeTxtJunk?.color) { //&& (aux.oldeTxtJunk.color.includes(skipOlde))) {
 
         // split it again just in case there are bots and junkies helping.
         const parts = aux.oldeTxtJunk.color.split(":")
@@ -155,7 +162,7 @@ export function AuxGroupRender(props: RenderThingsWithAuxGroupProps) {
 
     // this is actually asset="steet.jpg"
     // the old texture hints and url loads.
-    if (aux.oldeTxtJunk?.textureUrl) {
+    if (aux.oldeTxtJunk?.textureUrl) { //&& (aux.oldeTxtJunk.textureUrl.includes(skipOlde))) {
         // const ele = leaves.x({ worldDisplayState: props.state, groupInfo: group, index Base: props.inde xBase })
 
         if (aux.oldeTxtJunk) {
@@ -175,80 +182,139 @@ export function AuxGroupRender(props: RenderThingsWithAuxGroupProps) {
         return tmp
     }
 
-    if (Object.keys(aux.glbItems).length === 0) {
+    {// everybody else
         return drawAllAsBoxed() //  oops.  nobody home.
     }
+
+
+    function doConverter(): Blob | null {
+
+        const agtlf = useGLTF("/shiba/scene.gltf")
+        // can we make a blob here?
+        // Yes. agtlf looks good from Shiba
+        // animations: []
+        // asset: 
+        // {extras: {…}, generator: 'Sketchfab-12.68.0', version: '2.0'}
+        // cameras: []
+        // materials: {default: MeshBasicMaterial}
+        // nodes:  {Sketchfab_Scene: Group, Sketchfab_model: Object3D, 1FBX: Object3D, RootNode: Object3D, Group18985: Object3D, …}
+        // parser :  GLTFParser {json: {…}, extensions: {…}, plugins: {…}, options: {…}, cache: {…}, …}
+        // scene : Group {isObject3D: true, uuid: '08ffc715-b532-46f2-bba9-1158bc87951a', name: 'Sketchfab_Scene', type: 'Group', parent: null, …}
+        // scenes :  [Group]
+        // userData :  {}
+
+        // Example: Converting a file input or fetched GLTF/GLB into a Blob
+
+        // Read the file as an ArrayBuffer
+        //   const arrayBuffer = await agtlf.arrayBuffer();
+
+        //   // Create a Blob from the buffer
+        //   const gltfBlob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+
+        //   // You can now create a local blob URL if needed
+        //   const blobUrl = URL.createObjectURL(gltfBlob);
+        //   return gltfBlob;
+        //}
+
+        //    return agtlf // is this not a blob? 
+
+        convertGlbToGltfBlobs(agtlf).then(
+            (
+                { gltfBlob, binBlob }) => {
+                console.log("Converted GLB to GLTF blobs:", gltfBlob, binBlob);
+                return gltfBlob;
+
+            }).catch((error) => {
+                console.error("Error converting GLB to GLTF blobs:", error);
+                return null
+            });
+        return null; // ensure the function returns a value even if the promise hasn't resolved yet
+    }
+
+    var haveGlbBlob: Blob | null = doConverter()
+
     // but let's say there is a key! 
     // now we enter the frightful world of converting blobs into GLB's and then into scenes and then into meshes.
     // and then rendering them.
     // Presuably we can subscribe to animation tricks and other cool stuff. But for now, let's just get the GLB to render.
 
-    const firstKey = Array.from(aux.glbItems.keys())[0];
-    const item = aux.glbItems.get(firstKey);
-    if (!item) {
-        console.error("ThingWithAux: aux.glbItems has key but no item for key:", firstKey)
+    // const firstKey = Array.from(aux.glbItems.keys())[0];
+    // const firstKey = "dummy_key" // placeholder since we're not using aux.glbItems anymore
+    if (!haveGlbBlob) {
+        console.error("ThingWithAux: haveGlbBlob is null :")
         return drawAllAsBoxed()
     }
-    const firstItemStatus = item?.active;
-    const firstItem = item?.blob;
-    console.log("ThingWithAux: found glbItems with first key:", firstKey, "active:", firstItemStatus)
+    const firstItemStatus = true // item?.active;
+
+    const firstItem = haveGlbBlob //put blob here for experiment.item?.blob;
+    //   console.log("ThingWithAux: found glbItems with first key:", firstKey, "active:", firstItemStatus)
     /// we're supposed to parse this bad boy into some parts,
 
-    let foundGlb: GLTF | null = null
+    ////////let foundGlb: GLTF | null = null
+
+
     const mixerRef = useRef<THREE.AnimationMixer | null>(null);
     const scene = new THREE.Scene();
 
-    // let's try this one:
-    // this makes a scene, the one above.
-    firstItem.arrayBuffer().then((arrayBuffer: ArrayBuffer) => {
-        const loader = new GLTFLoader();
+    console.log("haveGlbBlob is available:", haveGlbBlob);
 
-        loader.parse(
-            arrayBuffer,
-            '',
-            (loadedGltf: GLTF) => {
-                // foundGlb = loadedGltf //  setGltf(loadedGltf);
+    // if (haveGlbBlob !== null) {
 
-                scene.add(loadedGltf.scene);
+    //     // let's try this one:
+    //     // this makes a scene, the one above.
+    //     haveGlbBlob.arrayBuffer().then((arrayBuffer: ArrayBuffer) => {
 
-                // Check if the GLB file contains embedded animations
-                if (loadedGltf.animations && loadedGltf.animations.length > 0) {
-                    const mixer = new THREE.AnimationMixer(loadedGltf.scene);
+    //         const loader = new GLTFLoader();
 
-                    // Play the first animation clip by default
-                    const action = mixer.clipAction(loadedGltf.animations[0]);
-                    action.play();
+    //         loader.parse(
+    //             arrayBuffer,
+    //             '',
+    //             (loadedGltf: GLTF) => {
+    //                 // foundGlb = loadedGltf //  setGltf(loadedGltf);
 
-                    mixerRef.current = mixer;
-                }
-            },
-            (error) => {
-                console.error('Error parsing GLTF array buffer:', error);
-            }
-        );
-    });
+    //                 scene.add(loadedGltf.scene);
 
-    // Clean up mixer and actions on unmount or blob change
-    // where, where, why and how. 
-    // in the final version we parse it once and that's economical.
-    //return () => 
-    { // I don't think there is one of these anyway.
-        if (mixerRef.current) {
-            mixerRef.current.stopAllAction();
-            mixerRef.current = null;
-        }
-    };
+    //                 // Check if the GLB file contains embedded animations
+    //                 if (loadedGltf.animations && loadedGltf.animations.length > 0) {
+    //                     const mixer = new THREE.AnimationMixer(loadedGltf.scene);
 
-    // now what? I expect the rest ts garbage, 'I'm not sure ThingWithAux is a component for.
+    //                     // Play the first animation clip by default
+    //                     const action = mixer.clipAction(loadedGltf.animations[0]);
+    //                     action.play();
 
-    // can we just render the foundGlb in a scene thing?
-    // it looks like it should draw.
+    //                     mixerRef.current = mixer;
+    //                 }
+    //             },
+    //             (error) => {
+    //                 console.error('Error parsing GLTF array buffer:', error);
+    //             }
+    //         );
+    //     });
 
-    return (
-        <mesh key={aux.wholeMaster} >
-            <primitive object={scene} />
-        </mesh>
-    )
+    //     // Clean up mixer and actions on unmount or blob change
+    //     // where, where, why and how. 
+    //     // in the final version we parse it once and that's economical.
+    //     //return () => 
+    //     { // I don't think there is one of these anyway.
+    //         if (mixerRef.current) {
+    //             mixerRef.current.stopAllAction();
+    //             mixerRef.current = null;
+    //         }
+    //     };
+
+    //     // now what? I expect the rest ts garbage, 'I'm not sure ThingWithAux is a component for.
+
+    //     // can we just render the foundGlb in a scene thing?
+    //     // it looks like it should draw.
+
+    //     return (
+    //         <mesh key={aux.wholeMaster} >
+    //             <primitive object={scene} />
+    //         </mesh>
+    //     )
+    // } else {
+    //     return drawAllAsBoxed()
+    // }
 
 } // end of ThingWithAux
 
@@ -261,67 +327,60 @@ export type LeafRenderingComponentProps = {
     groupInfo: oct.GroupTextParameters // let's also know this always.
 }
 
+async function convertGlbToGltfBlobs(glbBlob: any) {
+    const arrayBuffer = await glbBlob.arrayBuffer();
+    const dataView = new DataView(arrayBuffer);
 
-// can we delete this already?
-// FIXME: group the things with the same texture (and id) and draw them all at once. This will be more efficient than drawing each one separately. We can do this by creating a map of texture to list of cubes, and then drawing each list of cubes with the same texture in one go.
-// for now, just draw the glb ones one at a time
-// thing with Aux draws glb's // discontining this.
-// export function XXxxXXThingWithGlb({ props, indexBase }: ThingWithGlbProps) {
+    // 1. Verify GLB Header
+    const magic = dataView.getUint32(0, true);
+    if (magic !== 0x46546C67) { // "glTF" in ASCII
+        throw new Error("Not a valid GLB file.");
+    }
 
-//     const groupInfo = props.groupInfo
-//     let baseUrl = "http://" + props.treeStatus.name
-//     const treeStatus = props.treeStatus
-//     // if (treeStatus.wasXYZ) {
-//     //     baseUrl += ".xyz"
-//     // } else {
-//     //     baseUrl += ".vr"
-//     //}
-//     const cube = props.treeStatus.cube
-//     const center: [number, number, number] = [cube.x + (2 ** cube.p) / 2, cube.y + (2 ** cube.p) / 2, cube.z + (2 ** cube.p) / 2]
-//     const width = (2 ** cube.p)
-//     const size = width
+    const version = dataView.getUint32(4, true);
+    const totalLength = dataView.getUint32(8, true);
 
-//     let asset = groupInfo.asset
+    let offset = 12;
+    let gltfJson = null;
+    let binBlob = null;
 
-//     let glbUrl = baseUrl + "/" + asset
+    // 2. Walk through the GLB chunks
+    while (offset < totalLength) {
+        const chunkLength = dataView.getUint32(offset, true);
+        const chunkType = dataView.getUint32(offset + 4, true);
+        offset += 8;
 
-//     const forceRemote = false
-//     glbUrl = RewriteUrl(glbUrl, groupInfo, treeStatus, forceRemote)
+        if (chunkType === 0x4E4F534A) { // "JSON" chunk
+            const jsonBuffer = arrayBuffer.slice(offset, offset + chunkLength);
+            const decoder = new TextDecoder("utf-8");
+            gltfJson = JSON.parse(decoder.decode(jsonBuffer));
+        }
+        else if (chunkType === 0x004E4942) { // "BIN" chunk
+            const binBuffer = arrayBuffer.slice(offset, offset + chunkLength);
+            binBlob = new Blob([binBuffer], { type: "application/octet-stream" });
+        }
 
-//     // console.log("ThingWithGlb glbUrl ", glbUrl, "remote URL will be ", glbUrl)
+        offset += chunkLength;
+    }
 
-//     const adjustment = 0.1
+    if (!gltfJson) throw new Error("No JSON chunk found in GLB.");
 
-//     const centerBottom: [number, number, number] = [center[0], center[1] - size / 2 + adjustment, center[2]]
+    // 3. Point the glTF JSON to the new BIN blob URI if a BIN chunk exists
+    if (binBlob && gltfJson.buffers && gltfJson.buffers[0]) {
+        const binBlobUrl = URL.createObjectURL(binBlob);
+        gltfJson.buffers[0].uri = binBlobUrl;
+        // Note: If you are downloading these files, you'll want to change this uri 
+        // to a relative path like "data.bin" instead of a temporary blob URL.
+    }
 
-//     // FIXME - use the actual asset url, and make sure it's a glb url.
-//     let glb;
-//     try {
-//         const { scene } = useGLTF(glbUrl);
-//         return (
-//             <>
-//                 {/* <mesh
-//                     position={centerBottom}
-//                    // rotation={[-Math.PI / 2, 0, 0]} // rotate the plane to be horizontal
-//                 > */}
-//                 <primitive object={scene} position={centerBottom} key={indexBase} />
-//                 {/* </mesh> */}
-//             </>
-//         );
-//     } catch (e) {
-//         // should we announce this? 
-//         console.log("Failed to load GLB:", glbUrl, e)
-//         // we should have a version of this with a big "error" sign posted at eye level. TODO:
-//         // I'm getting this with a glbUrl that works, and will eventually load.
-//         // what do I do in the meantime? 
-//         // set a timer? Doesn't work. If I go to orbital view then it starts working. wtf.
-//         // setTimeout(() => {
-//         //     setTries(tries + 1)
-//         // }, 30000)
+    // 4. package the glTF JSON back into a text/json Blob
+    const gltfBlob = new Blob([JSON.stringify(gltfJson, null, 2)], { type: "application/json" });
 
-//         return <CubeWithEdges cube={cube} key={indexBase} />
-//     }
-// }
+    return {
+        gltfBlob,
+        binBlob
+    };
+}
 
 
 // Copyright 2026 Alan Tracey Wootton

@@ -355,7 +355,8 @@ export type AuxLeafStatus = {
     // they say Record is effecient and fast but 
     // I can debug Map better
     // glbItems: Record<string, GlbStatus>,
-    glbItems: Map<string, GlbStatus>,
+
+    // glbItems: Map<string, GlbStatus>, // why here? Is this not the state of a AuxGroupRenderer?
 
     // other stuff that a group of leaves or ThingAtars might need to do their business. 
 }

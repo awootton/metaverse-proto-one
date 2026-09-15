@@ -93,7 +93,7 @@ export const OriginAxisDisplay: React.FC = () => {
 
 
   const radius = .8
-  const thick = .25
+  const thick = .125
   // {/* radiusTop, radiusBottom, height, radialSegments */}
   return (
     <>
